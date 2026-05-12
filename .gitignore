@@ -79,6 +79,11 @@ htmlcov/
 *.sqlite
 *.sqlite3
 
+# OAuth credentials - NEVER commit these
+token.json
+credentials.json
+*.json.backup
+
 # Redpanda/Kafka data
 redpanda_data/
 kafka_data/
