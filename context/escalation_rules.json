@@ -1,0 +1,64 @@
+{
+  "keywords": {
+    "pricing": [
+      "price", "pricing", "cost", "expensive", "cheap", "affordable",
+      "budget", "payment", "pay", "charge", "fee", "subscription",
+      "plan", "tier", "billing", "invoice", "credit", "card"
+    ],
+    "refund": [
+      "refund", "return", "money back", "cancel subscription",
+      "cancel order", "reimburse", "compensation", "chargeback"
+    ],
+    "legal": [
+      "lawyer", "attorney", "legal", "lawsuit", "sue", "court",
+      "regulation", "compliance", "gdpr", "privacy policy", "terms",
+      "contract", "agreement", "liability", "dmca", "copyright"
+    ],
+    "human_request": [
+      "human", "agent", "representative", "person", "real person",
+      "talk to someone", "speak to someone", "customer service",
+      "support agent", "manager", "supervisor", "escalate", "escalation"
+    ],
+    "angry_indicators": [
+      "angry", "frustrated", "disappointed", "unacceptable", "terrible",
+      "awful", "horrible", "worst", "useless", "waste", "ridiculous",
+      "outrageous", "disgusting", "appalled", "furious", "livid",
+      "useless", "broken", "not working", "doesn't work"
+    ],
+    "urgent_indicators": [
+      "urgent", "emergency", "critical", "asap", "immediately",
+      "right now", "down", "outage", "production", "revenue loss"
+    ]
+  },
+  "sentiment_threshold": 0.3,
+  "escalation_emails": {
+    "pricing": "billing@company.com",
+    "refund": "billing@company.com",
+    "legal": "legal@company.com",
+    "human_request": "support@company.com",
+    "urgent": "priority-support@company.com",
+    "default": "support@company.com"
+  },
+  "auto_escalate_patterns": [
+    "i want to speak to a manager",
+    "this is unacceptable",
+    "i'm canceling my subscription",
+    "i want a refund",
+    "this is illegal",
+    "i'm contacting my lawyer",
+    "this is discrimination",
+    "i'm reporting you"
+  ],
+  "business_hours": {
+    "timezone": "America/New_York",
+    "start": "09:00",
+    "end": "17:00",
+    "days": ["monday", "tuesday", "wednesday", "thursday", "friday"]
+  },
+  "response_sla": {
+    "critical": "15 minutes",
+    "high": "1 hour",
+    "medium": "4 hours",
+    "low": "24 hours"
+  }
+}

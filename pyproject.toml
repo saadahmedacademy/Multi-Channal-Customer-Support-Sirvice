@@ -1,0 +1,50 @@
+# Pytest Configuration for AI Customer Support Agent
+# https://docs.pytest.org/en/latest/reference/reference.html
+
+[tool.pytest.ini_options]
+# Test discovery
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+
+# Test markers
+markers = [
+    "unit: Unit tests (fast, isolated)",
+    "integration: Integration tests (multiple components)",
+    "api: API endpoint tests",
+    "e2e: End-to-end tests (full workflow)",
+    "slow: Slow running tests (>1 second)"
+]
+
+# Output formatting
+addopts = """
+    -v
+    --tb=short
+    --strict-markers
+    --color=yes
+    --cov=backend
+    --cov-report=term-missing
+    --cov-report=html:htmlcov
+    --cov-report=xml:coverage.xml
+"""
+
+# Filter warnings
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+    "ignore::UserWarning"
+]
+
+# Async settings
+asyncio_mode = "auto"
+
+# Logging
+log_cli = true
+log_cli_level = "INFO"
+log_cli_format = "%(asctime)s [%(levelname)s] %(name)s: %(message)s"
+log_cli_date_format = "%Y-%m-%d %H:%M:%S"
+
+# JUnit XML for CI/CD
+junit_family = "xunit2"
+junit_logging = "all"

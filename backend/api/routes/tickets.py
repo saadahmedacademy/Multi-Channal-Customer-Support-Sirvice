@@ -1,0 +1,162 @@
+"""Ticket status lookup endpoint."""
+
+from fastapi import APIRouter, HTTPException, status
+from uuid import UUID
+import logging
+
+from backend.api.schemas.tickets import (
+    TicketStatusResponse,
+    TicketCategory,
+    TicketPriority,
+    TicketStatus,
+    ErrorResponse
+)
+from backend.api.schemas.messages import (
+    MessageSchema,
+    MessageRole,
+    MessageDirection,
+    Channel,
+    DeliveryStatus
+)
+from backend.db.repositories.ticket_repo import ticket_repo
+from backend.db.repositories.conversation_repo import conversation_repo
+from backend.db.connection import db
+
+logger = logging.getLogger(__name__)
+
+router = APIRouter(tags=["tickets"])
+
+
+def parse_ticket_id(ticket_id_str: str) -> UUID:
+    """
+    Parse ticket ID string to UUID.
+
+    Accepts formats:
+    - Full UUID: 550e8400-e29b-41d4-a716-446655440000
+    - Short format: TICKET-550E8400 or 550E8400
+    """
+    # Remove TICKET- prefix if present
+    if ticket_id_str.upper().startswith("TICKET-"):
+        ticket_id_str = ticket_id_str[7:]
+
+    # Try to parse as UUID
+    try:
+        # If it's a short ID (8 chars), pad it
+        if len(ticket_id_str) == 8:
+            # This is a short ID, we can't convert to full UUID
+            # In production, you'd store a mapping or use the full UUID
+            raise ValueError("Short ticket IDs need to be mapped to full UUIDs")
+        return UUID(ticket_id_str)
+    except ValueError as e:
+        logger.warning(f"Invalid ticket ID format: {ticket_id_str}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Invalid ticket ID format: {ticket_id_str}"
+        )
+
+
+@router.get(
+    "/ticket/{ticket_id}",
+    response_model=TicketStatusResponse,
+    responses={
+        200: {"description": "Ticket found"},
+        404: {"model": ErrorResponse, "description": "Ticket not found"},
+        500: {"model": ErrorResponse, "description": "Internal server error"}
+    }
+)
+async def get_ticket_status(ticket_id: str):
+    """
+    Get the status of a support ticket.
+
+    **Input**: Ticket ID (UUID or TICKET-XXXXXX format)
+
+    **Returns**: Ticket status with conversation messages
+    """
+    try:
+        # Parse ticket ID
+        ticket_uuid = None
+        
+        # Remove TICKET- prefix if present
+        clean_id = ticket_id.upper().replace("TICKET-", "")
+        
+        try:
+            # Try to parse as full UUID first
+            ticket_uuid = UUID(ticket_id)
+        except ValueError:
+            try:
+                # Try to parse cleaned ID as UUID
+                ticket_uuid = UUID(clean_id)
+            except ValueError:
+                # If it's a short ID (8 chars), we need to search by prefix
+                if len(clean_id) == 8:
+                    # Search for tickets matching this prefix
+                    tickets = await ticket_repo.get_all()
+                    for ticket in tickets:
+                        if str(ticket.id).upper().startswith(clean_id):
+                            ticket_uuid = ticket.id
+                            break
+                    
+                    if not ticket_uuid:
+                        raise HTTPException(
+                            status_code=status.HTTP_404_NOT_FOUND,
+                            detail=f"Ticket not found: {ticket_id}"
+                        )
+                else:
+                    raise HTTPException(
+                        status_code=status.HTTP_404_NOT_FOUND,
+                        detail=f"Ticket not found: {ticket_id}"
+                    )
+
+        # Get ticket
+        ticket = await ticket_repo.get_by_id(ticket_uuid)
+        if not ticket:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Ticket not found: {ticket_id}"
+            )
+
+        # Get conversation messages
+        async with db.acquire() as conn:
+            message_rows = await conn.fetch("""
+                SELECT id, conversation_id, channel, direction, role, content,
+                       created_at, tokens_used, latency_ms, delivery_status
+                FROM messages
+                WHERE conversation_id = $1
+                ORDER BY created_at ASC
+            """, ticket.conversation_id)
+
+        messages = []
+        for row in message_rows:
+            messages.append(MessageSchema(
+                id=str(row["id"]),
+                conversation_id=str(row["conversation_id"]),
+                channel=Channel(row["channel"]),
+                direction=MessageDirection(row["direction"]),
+                role=MessageRole(row["role"]),
+                content=row["content"],
+                created_at=row["created_at"],
+                tokens_used=row.get("tokens_used"),
+                latency_ms=row.get("latency_ms"),
+                delivery_status=DeliveryStatus(row["delivery_status"])
+            ))
+
+        # Build response
+        return TicketStatusResponse(
+            ticket_id=f"TICKET-{str(ticket.id)[:8].upper()}",
+            status=TicketStatus(ticket.status),
+            category=TicketCategory(ticket.category) if ticket.category else None,
+            priority=TicketPriority(ticket.priority),
+            created_at=ticket.created_at,
+            resolved_at=ticket.resolved_at,
+            messages=messages,
+            resolution_notes=ticket.resolution_notes
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error getting ticket status: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve ticket status"
+        )
