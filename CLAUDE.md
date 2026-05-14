@@ -50,6 +50,7 @@ cd frontend && npm install && npm run dev
 
 ### Security
 - [Security Incident](docs/SECURITY_INCIDENT.md) - OAuth credential exposure remediation
+- [RLS Security Fix](docs/RLS_SECURITY_FIX.md) - Row-Level Security vulnerability fix
 
 ---
 
