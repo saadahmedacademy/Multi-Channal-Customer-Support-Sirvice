@@ -19,7 +19,8 @@ async def enable_rls():
     print("🔧 Enabling Row-Level Security (RLS) on all tables...\n")
 
     try:
-        conn = await asyncpg.connect(database_url)
+        # Disable statement caching for Supabase/pgbouncer compatibility
+        conn = await asyncpg.connect(database_url, statement_cache_size=0)
 
         # List of all tables in the application
         tables = [

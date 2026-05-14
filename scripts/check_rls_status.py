@@ -19,7 +19,8 @@ async def check_rls_status():
     print("🔍 Checking RLS status on all tables...\n")
 
     try:
-        conn = await asyncpg.connect(database_url)
+        # Disable statement caching for Supabase/pgbouncer compatibility
+        conn = await asyncpg.connect(database_url, statement_cache_size=0)
 
         # Check RLS status for all tables
         query = """
