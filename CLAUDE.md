@@ -7,7 +7,7 @@
 
 ## 📋 Quick Start
 
-**Main Docs**: [README.md](README.md) | **Recent Changes**: [Implementation Summary](docs/IMPLEMENTATION_SUMMARY.md) | **Deploy**: [Deployment Runbook](docs/DEPLOYMENT_RUNBOOK.md)
+**Main Docs**: [README.md](README.md) | **Recent Changes**: [Implementation Summary](docs/IMPLEMENTATION.md) | **Deploy**: [Deployment Runbook](docs/DEPLOYMENT_RUNBOOK.md)
 
 ### Setup
 ```bash
@@ -32,7 +32,7 @@ cd frontend && npm install && npm run dev
 ### Architecture & Design
 - [Project Brief](docs/PROJECT_BRIEF.md) - Original requirements
 - [Project Context](docs/PROJECT_CONTEXT_EXTENSION.md) - Architecture details
-- [Improvements Summary](docs/IMPROVEMENTS_SUMMARY.md) - Historical changes
+- [Implementation Summary](docs/IMPLEMENTATION.md) - Completed improvements
 - [Agent Configuration](docs/AGENTS.md) - AI agent setup
 
 ### Specifications
@@ -47,6 +47,9 @@ cd frontend && npm install && npm run dev
 - [Hugging Face Setup](docs/HUGGINGFACE_SETUP.md) - HF API configuration
 - [Database Migrations](docs/DATABASE_MIGRATIONS.md) - Alembic workflow
 - [Frontend Guide](docs/FRONTEND_README.md) - Next.js structure
+
+### Security
+- [Security Incident](docs/SECURITY_INCIDENT.md) - OAuth credential exposure remediation
 
 ---
 
@@ -171,4 +174,4 @@ pytest tests/unit/test_worker.py   # Specific test
 
 ---
 
-**Version**: 1.0.0 | **Updated**: 2026-05-12 | **License**: MIT
+**Version**: 1.0.0 | **Updated**: 2026-05-14 | **License**: MIT

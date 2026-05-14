@@ -1,6 +1,3 @@
-description = "Reverse engineer a codebase into SDD-RI artifacts (spec, plan, tasks, intelligence)"
-
-prompt = """
 ---
 description: Reverse engineer a codebase into SDD-RI artifacts (spec, plan, tasks, intelligence)
 ---
@@ -59,7 +56,7 @@ find [codebase-path] -name "*.json" -o -name "*.yaml" -o -name "*.toml" -o -name
 grep -r "if __name__ == '__main__'" [codebase-path] --include="*.py"
 
 # TypeScript/JavaScript entry points
-grep -r "express\\(\\)\\|fastify\\(\\)\\|app.listen" [codebase-path] --include="*.ts" --include="*.js"
+grep -r "express\(\)\|fastify\(\)\|app.listen" [codebase-path] --include="*.ts" --include="*.js"
 
 # Go entry points
 grep -r "func main()" [codebase-path] --include="*.go"
@@ -91,7 +88,7 @@ cat [codebase-path]/pom.xml [codebase-path]/build.gradle 2>/dev/null
 find [codebase-path] -name "*test*" -o -name "*spec*" | head -20
 
 # Identify test frameworks
-grep -r "import.*pytest\\|unittest\\|jest\\|mocha\\|testing" [codebase-path] --include="*.py" --include="*.ts" --include="*.go" | head -10
+grep -r "import.*pytest\|unittest\|jest\|mocha\|testing" [codebase-path] --include="*.py" --include="*.ts" --include="*.go" | head -10
 ```
 
 ### Step 1.5: Read Existing Documentation
@@ -132,13 +129,13 @@ Execute these six analysis dimensions systematically:
 
 ```bash
 # Find API endpoints/routes
-grep -r "route\\|@app\\|@get\\|@post\\|@put\\|@delete\\|router\\." [codebase-path] --include="*.py" --include="*.ts" --include="*.js" | head -30
+grep -r "route\|@app\|@get\|@post\|@put\|@delete\|router\." [codebase-path] --include="*.py" --include="*.ts" --include="*.js" | head -30
 
 # Find public interfaces
-grep -r "class.*public\\|export class\\|export function\\|def.*public" [codebase-path] | head -30
+grep -r "class.*public\|export class\|export function\|def.*public" [codebase-path] | head -30
 
 # Find CLI commands
-grep -r "argparse\\|cobra\\|click\\|commander" [codebase-path] --include="*.py" --include="*.go" --include="*.js" | head -20
+grep -r "argparse\|cobra\|click\|commander" [codebase-path] --include="*.py" --include="*.go" --include="*.js" | head -20
 ```
 
 **For each interface discovered**:
@@ -151,22 +148,22 @@ grep -r "argparse\\|cobra\\|click\\|commander" [codebase-path] --include="*.py" 
 
 **Performance patterns**:
 ```bash
-grep -r "cache\\|redis\\|memcached\\|async\\|await\\|pool" [codebase-path] --include="*.py" --include="*.ts" --include="*.go" | wc -l
+grep -r "cache\|redis\|memcached\|async\|await\|pool" [codebase-path] --include="*.py" --include="*.ts" --include="*.go" | wc -l
 ```
 
 **Security patterns**:
 ```bash
-grep -r "auth\\|jwt\\|bcrypt\\|encrypt\\|sanitize\\|validate" [codebase-path] --include="*.py" --include="*.ts" --include="*.go" | wc -l
+grep -r "auth\|jwt\|bcrypt\|encrypt\|sanitize\|validate" [codebase-path] --include="*.py" --include="*.ts" --include="*.go" | wc -l
 ```
 
 **Reliability patterns**:
 ```bash
-grep -r "retry\\|circuit.breaker\\|fallback\\|timeout" [codebase-path] --include="*.py" --include="*.ts" --include="*.go" | wc -l
+grep -r "retry\|circuit.breaker\|fallback\|timeout" [codebase-path] --include="*.py" --include="*.ts" --include="*.go" | wc -l
 ```
 
 **Observability patterns**:
 ```bash
-grep -r "log\\|logger\\|metric\\|trace\\|monitor" [codebase-path] --include="*.py" --include="*.ts" --include="*.go" | wc -l
+grep -r "log\|logger\|metric\|trace\|monitor" [codebase-path] --include="*.py" --include="*.ts" --include="*.go" | wc -l
 ```
 
 #### 1.4 Constraint Discovery
@@ -174,13 +171,13 @@ grep -r "log\\|logger\\|metric\\|trace\\|monitor" [codebase-path] --include="*.p
 **External integrations**:
 ```bash
 # Database connections
-grep -r "postgresql\\|mysql\\|mongodb\\|redis\\|sqlite" [codebase-path] --include="*.py" --include="*.ts" --include="*.go"
+grep -r "postgresql\|mysql\|mongodb\|redis\|sqlite" [codebase-path] --include="*.py" --include="*.ts" --include="*.go"
 
 # External APIs
-grep -r "http.get\\|requests.post\\|fetch\\|axios\\|http.Client" [codebase-path] --include="*.py" --include="*.ts" --include="*.go" | head -20
+grep -r "http.get\|requests.post\|fetch\|axios\|http.Client" [codebase-path] --include="*.py" --include="*.ts" --include="*.go" | head -20
 
 # Message queues
-grep -r "kafka\\|rabbitmq\\|sqs\\|pubsub\\|queue" [codebase-path] --include="*.py" --include="*.ts" --include="*.go"
+grep -r "kafka\|rabbitmq\|sqs\|pubsub\|queue" [codebase-path] --include="*.py" --include="*.ts" --include="*.go"
 ```
 
 ---
@@ -208,10 +205,10 @@ ls -la [codebase-path]/
 
 ```bash
 # Find pattern keywords in code
-grep -r "Factory\\|Builder\\|Singleton\\|Adapter\\|Strategy\\|Observer\\|Command\\|Decorator" [codebase-path] --include="*.py" --include="*.ts" --include="*.go" | head -20
+grep -r "Factory\|Builder\|Singleton\|Adapter\|Strategy\|Observer\|Command\|Decorator" [codebase-path] --include="*.py" --include="*.ts" --include="*.go" | head -20
 
 # Find interface/abstract class definitions
-grep -r "interface\\|abstract class\\|Protocol\\|ABC" [codebase-path] --include="*.py" --include="*.ts" --include="*.go" | head -20
+grep -r "interface\|abstract class\|Protocol\|ABC" [codebase-path] --include="*.py" --include="*.ts" --include="*.go" | head -20
 ```
 
 #### 2.3 Architectural Style Classification
@@ -228,12 +225,12 @@ find [codebase-path] -type d -name "*domain*" -o -name "*infrastructure*" -o -na
 
 **Check for Event-Driven**:
 ```bash
-grep -r "event\\|emit\\|publish\\|subscribe\\|listener\\|handler" [codebase-path] --include="*.py" --include="*.ts" --include="*.go" | wc -l
+grep -r "event\|emit\|publish\|subscribe\|listener\|handler" [codebase-path] --include="*.py" --include="*.ts" --include="*.go" | wc -l
 ```
 
 **Check for CQRS**:
 ```bash
-grep -r "command\\|query\\|CommandHandler\\|QueryHandler" [codebase-path] --include="*.py" --include="*.ts" --include="*.go"
+grep -r "command\|query\|CommandHandler\|QueryHandler" [codebase-path] --include="*.py" --include="*.ts" --include="*.go"
 ```
 
 #### 2.4 Data Flow Tracing
@@ -272,30 +269,30 @@ For each major module/package:
 
 ```bash
 # External service calls
-grep -rn "http.get\\|requests.post\\|fetch\\|axios\\|http.Client" [codebase-path] --include="*.py" --include="*.ts" --include="*.go" | head -20
+grep -rn "http.get\|requests.post\|fetch\|axios\|http.Client" [codebase-path] --include="*.py" --include="*.ts" --include="*.go" | head -20
 
 # Database queries
-grep -rn "SELECT\\|INSERT\\|UPDATE\\|DELETE\\|query\\|execute\\|find\\|create\\|save" [codebase-path] --include="*.py" --include="*.ts" --include="*.go" | head -20
+grep -rn "SELECT\|INSERT\|UPDATE\|DELETE\|query\|execute\|find\|create\|save" [codebase-path] --include="*.py" --include="*.ts" --include="*.go" | head -20
 
 # Queue/messaging
-grep -rn "publish\\|subscribe\\|send_message\\|consume\\|produce" [codebase-path] --include="*.py" --include="*.ts" --include="*.go"
+grep -rn "publish\|subscribe\|send_message\|consume\|produce" [codebase-path] --include="*.py" --include="*.ts" --include="*.go"
 ```
 
 #### 3.4 Cross-Cutting Concern Identification
 
 **Logging**:
 ```bash
-grep -r "logger\\|log\\." [codebase-path] --include="*.py" --include="*.ts" --include="*.go" | head -10
+grep -r "logger\|log\." [codebase-path] --include="*.py" --include="*.ts" --include="*.go" | head -10
 ```
 
 **Error Handling**:
 ```bash
-grep -r "try:\\|catch\\|except\\|error\\|Error" [codebase-path] --include="*.py" --include="*.ts" --include="*.go" | head -10
+grep -r "try:\|catch\|except\|error\|Error" [codebase-path] --include="*.py" --include="*.ts" --include="*.go" | head -10
 ```
 
 **Configuration**:
 ```bash
-grep -r "config\\|env\\|settings\\|getenv" [codebase-path] --include="*.py" --include="*.ts" --include="*.go" | head -10
+grep -r "config\|env\|settings\|getenv" [codebase-path] --include="*.py" --include="*.ts" --include="*.go" | head -10
 ```
 
 ---
@@ -314,7 +311,7 @@ grep -r "config\\|env\\|settings\\|getenv" [codebase-path] --include="*.py" --in
 **Look for**:
 ```bash
 # Find repeated function/method names
-grep -rh "def \\|func \\|function " [codebase-path] --include="*.py" --include="*.go" --include="*.ts" | sort | uniq -c | sort -rn | head -20
+grep -rh "def \|func \|function " [codebase-path] --include="*.py" --include="*.go" --include="*.ts" | sort | uniq -c | sort -rn | head -20
 ```
 
 #### 4.2 Implicit Expertise Detection
@@ -322,7 +319,7 @@ grep -rh "def \\|func \\|function " [codebase-path] --include="*.py" --include="
 **Find important comments** (reveal tacit knowledge):
 ```bash
 # Comments with keywords indicating critical knowledge
-grep -rn "IMPORTANT:\\|NOTE:\\|WARNING:\\|SECURITY:\\|TODO:\\|HACK:\\|FIXME:" [codebase-path] --include="*.py" --include="*.ts" --include="*.go" | head -30
+grep -rn "IMPORTANT:\|NOTE:\|WARNING:\|SECURITY:\|TODO:\|HACK:\|FIXME:" [codebase-path] --include="*.py" --include="*.ts" --include="*.go" | head -30
 ```
 
 #### 4.3 Architecture Decision Extraction
@@ -332,7 +329,7 @@ grep -rn "IMPORTANT:\\|NOTE:\\|WARNING:\\|SECURITY:\\|TODO:\\|HACK:\\|FIXME:" [c
 find [codebase-path] -name "*decision*" -o -name "*ADR*" -o -name "architecture.md"
 
 # Look for significant comments about choices
-grep -rn "chosen because\\|decided to\\|alternative\\|tradeoff" [codebase-path] --include="*.py" --include="*.ts" --include="*.go" --include="*.md"
+grep -rn "chosen because\|decided to\|alternative\|tradeoff" [codebase-path] --include="*.py" --include="*.ts" --include="*.go" --include="*.md"
 ```
 
 #### 4.4 Skill Candidate Identification
@@ -394,13 +391,13 @@ cd [codebase-path] && go test -cover ./... 2>/dev/null
 **Potential security issues**:
 ```bash
 # Code injection risks
-grep -rn "eval\\|exec\\|system\\|shell" [codebase-path] --include="*.py" --include="*.js"
+grep -rn "eval\|exec\|system\|shell" [codebase-path] --include="*.py" --include="*.js"
 
 # Hardcoded secrets
-grep -rn "password.*=.*\\"\\|api_key.*=.*\\"\\|secret.*=.*\\"" [codebase-path] --include="*.py" --include="*.ts" --include="*.go"
+grep -rn "password.*=.*\"\|api_key.*=.*\"\|secret.*=.*\"" [codebase-path] --include="*.py" --include="*.ts" --include="*.go"
 
 # SQL injection risks
-grep -rn "execute.*%\\|query.*format\\|SELECT.*+" [codebase-path] --include="*.py" --include="*.ts" --include="*.go"
+grep -rn "execute.*%\|query.*format\|SELECT.*+" [codebase-path] --include="*.py" --include="*.ts" --include="*.go"
 ```
 
 #### 5.4 Observability Gaps
@@ -413,16 +410,16 @@ grep -rn "execute.*%\\|query.*format\\|SELECT.*+" [codebase-path] --include="*.p
 
 ```bash
 # Structured logging
-grep -r "json\\|structured" [codebase-path] --include="*log*"
+grep -r "json\|structured" [codebase-path] --include="*log*"
 
 # Metrics
-grep -r "prometheus\\|statsd\\|metric" [codebase-path] --include="*.py" --include="*.ts" --include="*.go"
+grep -r "prometheus\|statsd\|metric" [codebase-path] --include="*.py" --include="*.ts" --include="*.go"
 
 # Tracing
-grep -r "trace\\|span\\|opentelemetry" [codebase-path] --include="*.py" --include="*.ts" --include="*.go"
+grep -r "trace\|span\|opentelemetry" [codebase-path] --include="*.py" --include="*.ts" --include="*.go"
 
 # Health checks
-grep -rn "/health\\|/ready\\|/alive" [codebase-path] --include="*.py" --include="*.ts" --include="*.go"
+grep -rn "/health\|/ready\|/alive" [codebase-path] --include="*.py" --include="*.ts" --include="*.go"
 ```
 
 ---
@@ -1613,4 +1610,3 @@ As the main request completes, you MUST create and complete a PHR (Prompt Histor
 4) Validate + report
    - No unresolved placeholders; path under `history/prompts/` and matches stage; stage/title/date coherent; print ID + path + stage + title.
    - On failure: warn, don't block. Skip only for `/sp.phr`.
-"""

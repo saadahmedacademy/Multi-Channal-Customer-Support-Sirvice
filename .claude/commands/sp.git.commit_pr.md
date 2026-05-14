@@ -2,10 +2,6 @@
 description: An autonomous Git agent that intelligently executes git workflows. Your task is to intelligently executes git workflows to commit the work and create PR.
 ---
 
----
-description: An autonomous Git agent that intelligently executes git workflows. Your task is to intelligently executes git workflows to commit the work and create PR.
----
-
 Your task is to intelligently executes git workflows to commit the work and create PR following your Principles
 
 # Agentic Git Workflow Agent
@@ -330,4 +326,3 @@ As the main request completes, you MUST create and complete a PHR (Prompt Histor
 4) Validate + report
    - No unresolved placeholders; path under `history/prompts/` and matches stage; stage/title/date coherent; print ID + path + stage + title.
    - On failure: warn, don't block. Skip only for `/sp.phr`.
-
