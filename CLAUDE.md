@@ -32,6 +32,7 @@ cd frontend && npm install && npm run dev
 ### Architecture & Design
 - [Project Brief](docs/PROJECT_BRIEF.md) - Original requirements
 - [Project Context](docs/PROJECT_CONTEXT_EXTENSION.md) - Architecture details
+- [Project Status](docs/PROJECT_STATUS.md) - Complete vs remaining analysis
 - [Implementation Summary](docs/IMPLEMENTATION.md) - Completed improvements
 - [Agent Configuration](docs/AGENTS.md) - AI agent setup
 
