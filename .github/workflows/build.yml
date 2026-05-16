@@ -46,7 +46,7 @@ jobs:
             type=sha
 
       - name: Build and push Backend image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: ./backend/Dockerfile
@@ -90,7 +90,7 @@ jobs:
             type=sha
 
       - name: Build and push Worker image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: ./backend/Dockerfile.worker
@@ -134,7 +134,7 @@ jobs:
             type=sha
 
       - name: Build and push Frontend image
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v7
         with:
           context: .
           file: ./frontend/Dockerfile
