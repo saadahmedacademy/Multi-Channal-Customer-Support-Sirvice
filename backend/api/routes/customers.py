@@ -13,7 +13,7 @@ from backend.utils.auth import get_api_key
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/customers", tags=["customers"])
+router = APIRouter(tags=["customers"])
 
 
 @router.get("/lookup", dependencies=[Depends(get_api_key)])

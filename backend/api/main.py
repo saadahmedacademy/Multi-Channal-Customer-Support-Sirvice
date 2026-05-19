@@ -12,6 +12,7 @@ from backend.db.connection import init_db, close_db, db
 from backend.integrations.queue_client import queue_client
 from backend.api.middleware.error_handler import register_exception_handlers
 from backend.api.middleware.rate_limiter import RateLimitMiddleware
+from backend.api.middleware.security_headers import SecurityHeadersMiddleware
 
 logger = get_logger(__name__)
 
@@ -72,6 +73,13 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+)
+
+# Add security headers middleware
+# Enable HSTS only in production (when using HTTPS)
+app.add_middleware(
+    SecurityHeadersMiddleware,
+    enable_hsts=(settings.environment == "production")
 )
 
 # Add rate limiting middleware

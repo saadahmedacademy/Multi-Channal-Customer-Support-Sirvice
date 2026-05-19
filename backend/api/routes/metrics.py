@@ -12,7 +12,7 @@ from backend.utils.auth import get_api_key
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/metrics", tags=["metrics"])
+router = APIRouter(tags=["metrics"])
 
 
 @router.get("/channels", dependencies=[Depends(get_api_key)])

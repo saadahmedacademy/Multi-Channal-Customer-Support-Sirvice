@@ -11,7 +11,7 @@ from backend.utils.auth import get_api_key
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/conversations", tags=["conversations"])
+router = APIRouter(tags=["conversations"])
 
 
 @router.get("/{conversation_id}", dependencies=[Depends(get_api_key)])
