@@ -142,7 +142,7 @@ class Settings(BaseSettings):
         description="AI model to use (OpenRouter model string)"
     )
     ai_timeout: int = Field(
-        default=30,
+        default=10,
         description="AI API timeout in seconds"
     )
     max_tokens: int = Field(

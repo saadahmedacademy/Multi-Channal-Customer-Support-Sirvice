@@ -28,13 +28,13 @@ class DatabaseConnection:
         try:
             self._pool = await asyncpg.create_pool(
                 dsn=db_url,
-                min_size=2,
-                max_size=5,
-                command_timeout=60,
+                min_size=5,
+                max_size=20,
+                command_timeout=5,  # 5 second timeout for queries
                 max_inactive_connection_lifetime=300.0,
                 statement_cache_size=0  # Required for pgbouncer (Supabase)
             )
-            print(f"Database connection pool created with min_size=2, max_size=5 (4GB optimized)")
+            print(f"Database connection pool created with min_size=5, max_size=20 (optimized for 50+ concurrent users)")
         except Exception as e:
             print(f"Failed to create database connection pool: {e}")
             raise
