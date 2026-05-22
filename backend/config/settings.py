@@ -159,6 +159,7 @@ class Settings(BaseSettings):
     class Config:
         env_file = ENV_FILE_PATH
         case_sensitive = False
+        extra = "ignore"  # Ignore extra fields in .env
     
     @property
     def is_development(self) -> bool:
