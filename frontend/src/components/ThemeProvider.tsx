@@ -1,85 +1,61 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, ReactNode, useCallback, useRef } from 'react';
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 
 type Theme = 'light' | 'dark';
 
 interface ThemeContextType {
   theme: Theme;
   toggleTheme: () => void;
+  mounted: boolean;
 }
 
-const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
+const ThemeContext = createContext<ThemeContextType>({
+  theme: 'light',
+  toggleTheme: () => {},
+  mounted: false,
+});
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
   const [theme, setTheme] = useState<Theme>('light');
-  const isInitialized = useRef(false);
-  const isUpdating = useRef(false);
+  const [mounted, setMounted] = useState(false);
 
-  // Initialize theme from localStorage or system preference (only once on mount)
+  // Initialize theme on mount
   useEffect(() => {
-    if (isInitialized.current) return;
-    
+    setMounted(true);
+
     const savedTheme = localStorage.getItem('theme') as Theme | null;
-    
+
     if (savedTheme === 'light' || savedTheme === 'dark') {
       setTheme(savedTheme);
-      console.log('Loaded saved theme:', savedTheme);
     } else {
-      // Check system preference
       const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      const initialTheme = systemPrefersDark ? 'dark' : 'light';
-      setTheme(initialTheme);
-      console.log('Using system preference:', initialTheme);
+      setTheme(systemPrefersDark ? 'dark' : 'light');
     }
-    
-    isInitialized.current = true;
   }, []);
 
-  // Apply theme class to html element whenever theme changes
+  // Apply theme to document
   useEffect(() => {
-    if (!isInitialized.current || isUpdating.current) return;
-    
-    isUpdating.current = true;
-    
-    const html = document.documentElement;
-    
-    // Remove both classes first
-    html.classList.remove('light', 'dark');
-    
-    // Force a reflow to ensure the class change is applied
-    void html.offsetHeight;
-    
-    // Add the new theme class
-    html.classList.add(theme);
-    
+    if (!mounted) return;
+
+    const root = document.documentElement;
+
+    // Remove both classes
+    root.classList.remove('light', 'dark');
+
+    // Add current theme class
+    root.classList.add(theme);
+
     // Save to localStorage
     localStorage.setItem('theme', theme);
-    
-    console.log('Theme applied:', theme);
-    
-    // Release the lock after a short delay
-    setTimeout(() => {
-      isUpdating.current = false;
-    }, 50);
-  }, [theme]);
+  }, [theme, mounted]);
 
-  // Use useCallback with lock to prevent rapid toggling
-  const toggleTheme = useCallback(() => {
-    if (isUpdating.current) {
-      console.log('Toggle ignored - update in progress');
-      return;
-    }
-    
-    setTheme(prevTheme => {
-      const newTheme = prevTheme === 'light' ? 'dark' : 'light';
-      console.log('Toggling from', prevTheme, 'to', newTheme);
-      return newTheme;
-    });
-  }, []);
+  const toggleTheme = () => {
+    setTheme(prevTheme => prevTheme === 'light' ? 'dark' : 'light');
+  };
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme }}>
+    <ThemeContext.Provider value={{ theme, toggleTheme, mounted }}>
       {children}
     </ThemeContext.Provider>
   );
@@ -87,8 +63,5 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
 export function useTheme() {
   const context = useContext(ThemeContext);
-  if (context === undefined) {
-    throw new Error('useTheme must be used within a ThemeProvider');
-  }
   return context;
 }
