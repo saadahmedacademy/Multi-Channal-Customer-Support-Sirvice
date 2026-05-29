@@ -164,7 +164,8 @@ async def main():
 
     # Connect to database
     try:
-        conn = await asyncpg.connect(settings.database_url)
+        # Disable statement cache for pgbouncer compatibility
+        conn = await asyncpg.connect(settings.database_url, statement_cache_size=0)
         logger.info("Connected to database")
 
         # Seed knowledge base

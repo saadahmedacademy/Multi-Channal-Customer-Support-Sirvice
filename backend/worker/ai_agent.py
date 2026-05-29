@@ -57,8 +57,8 @@ class AIAgent:
         # Gemini API endpoint
         self.gemini_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent"
 
-        # Hugging Face Inference API endpoint (new router URL)
-        self.huggingface_url = "https://router.huggingface.co/hf-inference/models"
+        # Hugging Face Standard Inference API endpoint
+        self.huggingface_url = f"https://api-inference.huggingface.co/models/{self.huggingface_model}"
 
         # Shared HTTP client with connection pooling (reused across requests)
         self._http_client: Optional[httpx.AsyncClient] = None
@@ -242,7 +242,7 @@ Response Guidelines:
         messages: List[Dict[str, str]]
     ) -> Tuple[Optional[str], int]:
         """
-        Call Hugging Face Inference API.
+        Call Hugging Face Standard Inference API.
 
         Args:
             messages: Message array for chat completion
@@ -258,34 +258,33 @@ Response Guidelines:
             "Content-Type": "application/json"
         }
 
-        # Convert messages to prompt format for Hugging Face
+        # Convert messages to a single prompt for standard API
         prompt = ""
         for msg in messages:
-            if msg["role"] == "system":
-                prompt += f"<<SYS>>\n{msg['content']}\n<</SYS>>\n\n"
-            elif msg["role"] == "user":
-                prompt += f"[INST] {msg['content']} [/INST]"
-            elif msg["role"] == "assistant":
-                prompt += f"\n{msg['content']}\n"
+            role = msg.get("role", "")
+            content = msg.get("content", "")
+            if role == "system":
+                prompt += f"System: {content}\n\n"
+            elif role == "user":
+                prompt += f"User: {content}\n\n"
+            elif role == "assistant":
+                prompt += f"Assistant: {content}\n\n"
 
-        # Build model URL
-        model_url = f"{self.huggingface_url}/{self.huggingface_model}"
+        prompt += "Assistant:"
 
         payload = {
             "inputs": prompt,
             "parameters": {
                 "max_new_tokens": self.max_tokens,
                 "temperature": 0.7,
-                "top_p": 0.95,
-                "return_full_text": False,
-                "do_sample": True
+                "return_full_text": False
             }
         }
 
         async with await self._get_http_client() as client:
             try:
                 response = await client.post(
-                    model_url,
+                    self.huggingface_url,
                     headers=headers,
                     json=payload,
                     timeout=self.timeout
@@ -294,55 +293,20 @@ Response Guidelines:
 
                 data = response.json()
 
-                # Handle different response formats
+                # Standard Inference API response format
                 if isinstance(data, list) and len(data) > 0:
-                    # Text generation format
-                    content = data[0].get("generated_text", "")
-                elif isinstance(data, dict):
-                    # Error or alternative format
-                    if "error" in data:
-                        logger.warning(f"Hugging Face API returned error: {data['error']}")
-                        return None, 0
-                    content = data.get("generated_text", "")
+                    generated_text = data[0].get("generated_text", "")
+                    tokens_used = len(generated_text.split())  # Rough estimate
+
+                    logger.info(f"Hugging Face response generated (~{tokens_used} tokens)")
+                    return generated_text.strip(), tokens_used
                 else:
-                    logger.warning(f"Unexpected Hugging Face response format: {type(data)}")
+                    logger.warning(f"Unexpected Hugging Face response format: {data}")
                     return None, 0
-
-                # Clean up response (remove prompt if included)
-                content = content.strip()
-                if content.startswith(prompt[-50:]):
-                    content = content[len(prompt):].strip()
-
-                # Estimate tokens (rough approximation)
-                tokens_used = len(content.split()) * 1.3  # Words to tokens estimate
-
-                logger.info(f"Hugging Face response generated (~{int(tokens_used)} tokens)")
-                return content, int(tokens_used)
 
             except httpx.HTTPStatusError as e:
-                if e.response.status_code == 503:
-                    logger.warning("Hugging Face model is loading, retry in 30 seconds")
-                    # Model might be loading, wait and retry
-                    await asyncio.sleep(30)
-                    try:
-                        response = await client.post(
-                            model_url,
-                            headers=headers,
-                            json=payload,
-                            timeout=self.timeout
-                        )
-                        response.raise_for_status()
-                        data = response.json()
-                        if isinstance(data, list) and len(data) > 0:
-                            content = data[0].get("generated_text", "").strip()
-                            tokens_used = len(content.split()) * 1.3
-                            return content, int(tokens_used)
-                    except Exception as retry_error:
-                        logger.error(f"Hugging Face retry failed: {retry_error}")
-                        return None, 0
-                else:
-                    logger.error(f"Hugging Face API error: {e.response.status_code} - {e.response.text}")
-                    return None, 0
+                logger.error(f"Hugging Face API error: {e.response.status_code} - {e.response.text}")
+                return None, 0
 
             except httpx.RequestError as e:
                 logger.error(f"Hugging Face request failed: {e}")

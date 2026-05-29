@@ -10,34 +10,42 @@ export default function Home() {
   const { theme, toggleTheme, mounted } = useTheme();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 transition-colors">
-      {/* Header */}
-      <header className="bg-white dark:bg-gray-800 shadow-sm">
+    <div className="min-h-screen bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 dark:from-gray-900 dark:via-purple-900/20 dark:to-gray-900 transition-all duration-500">
+      {/* Animated Background Elements */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-purple-300/30 dark:bg-purple-500/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-blue-300/30 dark:bg-blue-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
+      </div>
+
+      {/* Header with Glassmorphism */}
+      <header className="relative backdrop-blur-md bg-white/70 dark:bg-gray-800/70 border-b border-white/20 dark:border-gray-700/50 shadow-lg">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">AI Support Center</h1>
-              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                Get help from our AI-powered support team, available 24/7
+            <div className="space-y-1">
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 dark:from-indigo-400 dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent animate-gradient">
+                AI Support Center
+              </h1>
+              <p className="text-sm text-gray-600 dark:text-gray-300 font-medium">
+                ✨ Get help from our AI-powered support team, available 24/7
               </p>
             </div>
             <div className="flex items-center space-x-4">
-              <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200">
-                <span className="w-2 h-2 mr-2 bg-green-500 rounded-full animate-pulse"></span>
+              <span className="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold bg-gradient-to-r from-green-400 to-emerald-500 text-white shadow-lg shadow-green-500/50 dark:shadow-green-500/30 transform hover:scale-105 transition-transform">
+                <span className="w-2 h-2 mr-2 bg-white rounded-full animate-pulse"></span>
                 Online
               </span>
               {mounted && (
                 <button
                   onClick={toggleTheme}
-                  className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                  className="p-3 rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 hover:shadow-lg transform hover:scale-110 transition-all duration-300 group"
                   aria-label="Toggle dark mode"
                 >
                   {theme === 'dark' ? (
-                    <svg className="w-5 h-5 text-yellow-500" fill="currentColor" viewBox="0 0 20 20">
+                    <svg className="w-5 h-5 text-yellow-500 group-hover:rotate-180 transition-transform duration-500" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clipRule="evenodd" />
                     </svg>
                   ) : (
-                    <svg className="w-5 h-5 text-gray-700" fill="currentColor" viewBox="0 0 20 20">
+                    <svg className="w-5 h-5 text-indigo-600 group-hover:rotate-180 transition-transform duration-500" fill="currentColor" viewBox="0 0 20 20">
                       <path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" />
                     </svg>
                   )}
@@ -48,29 +56,45 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Tab Navigation */}
-      <div className="bg-white dark:bg-gray-800 border-b dark:border-gray-700">
+      {/* Tab Navigation with Modern Design */}
+      <div className="relative backdrop-blur-md bg-white/50 dark:bg-gray-800/50 border-b border-white/20 dark:border-gray-700/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <nav className="flex space-x-8">
+          <nav className="flex space-x-2">
             <button
               onClick={() => setActiveTab('submit')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+              className={`relative py-4 px-6 font-semibold text-sm transition-all duration-300 ${
                 activeTab === 'submit'
-                  ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300'
+                  ? 'text-indigo-600 dark:text-indigo-400'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
               }`}
             >
-              Submit Request
+              <span className="relative z-10 flex items-center space-x-2">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                <span>Submit Request</span>
+              </span>
+              {activeTab === 'submit' && (
+                <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-t-full animate-slide-in"></div>
+              )}
             </button>
             <button
               onClick={() => setActiveTab('check')}
-              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+              className={`relative py-4 px-6 font-semibold text-sm transition-all duration-300 ${
                 activeTab === 'check'
-                  ? 'border-blue-500 text-blue-600 dark:text-blue-400'
-                  : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300'
+                  ? 'text-indigo-600 dark:text-indigo-400'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
               }`}
             >
-              Check Ticket Status
+              <span className="relative z-10 flex items-center space-x-2">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+                <span>Check Status</span>
+              </span>
+              {activeTab === 'check' && (
+                <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 rounded-t-full animate-slide-in"></div>
+              )}
             </button>
           </nav>
         </div>
@@ -84,88 +108,129 @@ export default function Home() {
             {activeTab === 'submit' ? <SupportForm /> : <TicketStatus />}
           </div>
 
-          {/* Info Sidebar */}
+          {/* Info Sidebar with Modern Cards */}
           <div className="space-y-6">
             {/* Response Time Card */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Response Times</h3>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600 dark:text-gray-300">AI Response</span>
-                  <span className="text-sm font-medium text-green-600 dark:text-green-400">&lt; 2 minutes</span>
+            <div className="group backdrop-blur-md bg-white/60 dark:bg-gray-800/60 rounded-2xl shadow-xl border border-white/20 dark:border-gray-700/50 p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300">
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg">
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600 dark:text-gray-300">Human Agent</span>
-                  <span className="text-sm font-medium text-blue-600 dark:text-blue-400">&lt; 1 hour</span>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white">Response Times</h3>
+              </div>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 border border-green-200/50 dark:border-green-700/50">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-200">AI Response</span>
+                  </div>
+                  <span className="text-sm font-bold text-green-600 dark:text-green-400">&lt; 2 min</span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600 dark:text-gray-300">Urgent Issues</span>
-                  <span className="text-sm font-medium text-orange-600 dark:text-orange-400">Prioritized</span>
+                <div className="flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border border-blue-200/50 dark:border-blue-700/50">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Human Agent</span>
+                  </div>
+                  <span className="text-sm font-bold text-blue-600 dark:text-blue-400">&lt; 1 hour</span>
+                </div>
+                <div className="flex items-center justify-between p-3 rounded-xl bg-gradient-to-r from-orange-50 to-amber-50 dark:from-orange-900/20 dark:to-amber-900/20 border border-orange-200/50 dark:border-orange-700/50">
+                  <div className="flex items-center space-x-2">
+                    <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Urgent Issues</span>
+                  </div>
+                  <span className="text-sm font-bold text-orange-600 dark:text-orange-400">Priority</span>
                 </div>
               </div>
             </div>
 
             {/* Categories Card */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Support Categories</h3>
-              <ul className="space-y-2">
-                <li className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                  <span className="w-2 h-2 mr-3 bg-blue-500 rounded-full"></span>
-                  Technical Support
+            <div className="group backdrop-blur-md bg-white/60 dark:bg-gray-800/60 rounded-2xl shadow-xl border border-white/20 dark:border-gray-700/50 p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300">
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="p-2 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg">
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                  </svg>
+                </div>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white">Support Categories</h3>
+              </div>
+              <ul className="space-y-3">
+                <li className="flex items-center text-sm text-gray-700 dark:text-gray-200 p-2 rounded-lg hover:bg-white/50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer">
+                  <span className="w-3 h-3 mr-3 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full shadow-lg shadow-blue-500/50"></span>
+                  <span className="font-medium">Technical Support</span>
                 </li>
-                <li className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                  <span className="w-2 h-2 mr-3 bg-green-500 rounded-full"></span>
-                  Billing Inquiries
+                <li className="flex items-center text-sm text-gray-700 dark:text-gray-200 p-2 rounded-lg hover:bg-white/50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer">
+                  <span className="w-3 h-3 mr-3 bg-gradient-to-br from-green-400 to-green-600 rounded-full shadow-lg shadow-green-500/50"></span>
+                  <span className="font-medium">Billing Inquiries</span>
                 </li>
-                <li className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                  <span className="w-2 h-2 mr-3 bg-purple-500 rounded-full"></span>
-                  Bug Reports
+                <li className="flex items-center text-sm text-gray-700 dark:text-gray-200 p-2 rounded-lg hover:bg-white/50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer">
+                  <span className="w-3 h-3 mr-3 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full shadow-lg shadow-purple-500/50"></span>
+                  <span className="font-medium">Bug Reports</span>
                 </li>
-                <li className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                  <span className="w-2 h-2 mr-3 bg-yellow-500 rounded-full"></span>
-                  Feature Requests
+                <li className="flex items-center text-sm text-gray-700 dark:text-gray-200 p-2 rounded-lg hover:bg-white/50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer">
+                  <span className="w-3 h-3 mr-3 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full shadow-lg shadow-yellow-500/50"></span>
+                  <span className="font-medium">Feature Requests</span>
                 </li>
-                <li className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                  <span className="w-2 h-2 mr-3 bg-gray-500 rounded-full"></span>
-                  General Questions
+                <li className="flex items-center text-sm text-gray-700 dark:text-gray-200 p-2 rounded-lg hover:bg-white/50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer">
+                  <span className="w-3 h-3 mr-3 bg-gradient-to-br from-gray-400 to-gray-600 rounded-full shadow-lg shadow-gray-500/50"></span>
+                  <span className="font-medium">General Questions</span>
                 </li>
               </ul>
             </div>
 
             {/* Contact Info Card */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Other Ways to Reach Us</h3>
-              <div className="space-y-3">
-                <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                  <svg className="w-5 h-5 mr-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="group backdrop-blur-md bg-white/60 dark:bg-gray-800/60 rounded-2xl shadow-xl border border-white/20 dark:border-gray-700/50 p-6 hover:shadow-2xl hover:scale-105 transition-all duration-300">
+              <div className="flex items-center space-x-3 mb-4">
+                <div className="p-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg">
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                   </svg>
-                  support@example.com
                 </div>
-                <div className="flex items-center text-sm text-gray-600 dark:text-gray-300">
-                  <svg className="w-5 h-5 mr-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                  </svg>
-                  WhatsApp: +1 234 567 8900
-                </div>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-white">Contact Us</h3>
+              </div>
+              <div className="space-y-3">
+                <a href="mailto:support@example.com" className="flex items-center text-sm text-gray-700 dark:text-gray-200 p-3 rounded-lg hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 dark:hover:from-indigo-900/20 dark:hover:to-purple-900/20 transition-all group/item">
+                  <div className="p-2 bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900/50 dark:to-purple-900/50 rounded-lg mr-3 group-hover/item:scale-110 transition-transform">
+                    <svg className="w-4 h-4 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  <span className="font-medium">support@example.com</span>
+                </a>
+                <a href="https://wa.me/1234567890" className="flex items-center text-sm text-gray-700 dark:text-gray-200 p-3 rounded-lg hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 dark:hover:from-green-900/20 dark:hover:to-emerald-900/20 transition-all group/item">
+                  <div className="p-2 bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-900/50 dark:to-emerald-900/50 rounded-lg mr-3 group-hover/item:scale-110 transition-transform">
+                    <svg className="w-4 h-4 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                    </svg>
+                  </div>
+                  <span className="font-medium">WhatsApp: +1 234 567 8900</span>
+                </a>
               </div>
             </div>
           </div>
         </div>
       </main>
 
-      {/* Footer */}
-      <footer className="bg-white dark:bg-gray-800 border-t dark:border-gray-700 mt-12">
+      {/* Modern Footer */}
+      <footer className="relative backdrop-blur-md bg-white/50 dark:bg-gray-800/50 border-t border-white/20 dark:border-gray-700/50 mt-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              © 2026 AI Support Center. Powered by AI, backed by humans.
-            </p>
-            <div className="flex space-x-6 mt-4 md:mt-0">
-              <a href="/privacy" className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">
+          <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
+            <div className="flex items-center space-x-2">
+              <div className="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
+                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+              </div>
+              <p className="text-sm font-medium text-gray-600 dark:text-gray-300">
+                © 2026 AI Support Center. <span className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent font-bold">Powered by AI</span>, backed by humans.
+              </p>
+            </div>
+            <div className="flex space-x-6">
+              <a href="/privacy" className="text-sm text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors font-medium">
                 Privacy Policy
               </a>
-              <a href="/terms" className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">
+              <a href="/terms" className="text-sm text-gray-600 dark:text-gray-300 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors font-medium">
                 Terms of Service
               </a>
             </div>

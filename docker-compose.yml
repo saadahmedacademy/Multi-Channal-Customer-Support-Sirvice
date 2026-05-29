@@ -47,7 +47,7 @@ services:
       dockerfile: backend/Dockerfile
     container_name: ai-support-backend
     ports:
-      - "8000:8000"
+      - "8002:8000"
     environment:
       - DATABASE_URL=${DATABASE_URL}
       - KAFKA_BOOTSTRAP_SERVERS=redpanda:29092
@@ -91,6 +91,7 @@ services:
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
       - GEMINI_API_KEY=${GEMINI_API_KEY}
       - HUGGINGFACE_API_KEY=${HUGGINGFACE_API_KEY}
+      - HUGGINGFACE_MODEL=${HUGGINGFACE_MODEL}
       - META_WHATSAPP_TOKEN=${META_WHATSAPP_TOKEN}
       - META_WHATSAPP_PHONE_ID=${META_WHATSAPP_PHONE_ID}
       - GMAIL_CLIENT_ID=${GMAIL_CLIENT_ID}
@@ -123,7 +124,8 @@ services:
     ports:
       - "3000:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=${BACKEND_URL:-http://localhost:8000}
+      - NEXT_PUBLIC_API_URL=${BACKEND_URL:-http://backend:8000}
+      - BACKEND_URL=http://backend:8000
       - NODE_ENV=production
     depends_on:
       backend:
