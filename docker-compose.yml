@@ -85,6 +85,9 @@ services:
       context: .
       dockerfile: backend/Dockerfile.worker
     container_name: ai-support-worker
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     environment:
       - DATABASE_URL=${DATABASE_URL}
       - KAFKA_BOOTSTRAP_SERVERS=redpanda:29092

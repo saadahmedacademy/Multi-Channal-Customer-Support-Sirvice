@@ -10,6 +10,14 @@ from datetime import datetime
 
 from backend.config.settings import settings
 
+# Hugging Face Inference Client
+try:
+    from huggingface_hub import InferenceClient
+    HF_CLIENT_AVAILABLE = True
+except ImportError:
+    HF_CLIENT_AVAILABLE = False
+    logging.warning("huggingface_hub not installed, Hugging Face integration will not work")
+
 logger = logging.getLogger(__name__)
 
 
@@ -56,9 +64,6 @@ class AIAgent:
 
         # Gemini API endpoint
         self.gemini_url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent"
-
-        # Hugging Face Standard Inference API endpoint
-        self.huggingface_url = f"https://api-inference.huggingface.co/models/{self.huggingface_model}"
 
         # Shared HTTP client with connection pooling (reused across requests)
         self._http_client: Optional[httpx.AsyncClient] = None
@@ -242,7 +247,7 @@ Response Guidelines:
         messages: List[Dict[str, str]]
     ) -> Tuple[Optional[str], int]:
         """
-        Call Hugging Face Standard Inference API.
+        Call Hugging Face Inference API using InferenceClient.
 
         Args:
             messages: Message array for chat completion
@@ -253,64 +258,39 @@ Response Guidelines:
         if not self.huggingface_api_key:
             return None, 0
 
-        headers = {
-            "Authorization": f"Bearer {self.huggingface_api_key}",
-            "Content-Type": "application/json"
-        }
+        if not HF_CLIENT_AVAILABLE:
+            logger.error("huggingface_hub library not available")
+            return None, 0
 
-        # Convert messages to a single prompt for standard API
-        prompt = ""
-        for msg in messages:
-            role = msg.get("role", "")
-            content = msg.get("content", "")
-            if role == "system":
-                prompt += f"System: {content}\n\n"
-            elif role == "user":
-                prompt += f"User: {content}\n\n"
-            elif role == "assistant":
-                prompt += f"Assistant: {content}\n\n"
-
-        prompt += "Assistant:"
-
-        payload = {
-            "inputs": prompt,
-            "parameters": {
-                "max_new_tokens": self.max_tokens,
-                "temperature": 0.7,
-                "return_full_text": False
-            }
-        }
-
-        async with await self._get_http_client() as client:
-            try:
-                response = await client.post(
-                    self.huggingface_url,
-                    headers=headers,
-                    json=payload,
-                    timeout=self.timeout
+        try:
+            # Run the synchronous InferenceClient in a thread pool
+            def _sync_call():
+                client = InferenceClient(
+                    model=self.huggingface_model,
+                    token=self.huggingface_api_key
                 )
-                response.raise_for_status()
 
-                data = response.json()
+                response = client.chat_completion(
+                    messages=messages,
+                    max_tokens=self.max_tokens,
+                    temperature=0.7
+                )
 
-                # Standard Inference API response format
-                if isinstance(data, list) and len(data) > 0:
-                    generated_text = data[0].get("generated_text", "")
-                    tokens_used = len(generated_text.split())  # Rough estimate
+                return response
 
-                    logger.info(f"Hugging Face response generated (~{tokens_used} tokens)")
-                    return generated_text.strip(), tokens_used
-                else:
-                    logger.warning(f"Unexpected Hugging Face response format: {data}")
-                    return None, 0
+            # Execute in thread pool to avoid blocking
+            response = await asyncio.to_thread(_sync_call)
 
-            except httpx.HTTPStatusError as e:
-                logger.error(f"Hugging Face API error: {e.response.status_code} - {e.response.text}")
-                return None, 0
+            # Extract the response content
+            content = response.choices[0].message.content
+            tokens_used = len(content.split())  # Rough estimate
 
-            except httpx.RequestError as e:
-                logger.error(f"Hugging Face request failed: {e}")
-                return None, 0
+            logger.info(f"Hugging Face response generated (~{tokens_used} tokens)")
+            return content.strip(), tokens_used
+
+        except Exception as e:
+            logger.error(f"Hugging Face API error: {e}", exc_info=True)
+            return None, 0
 
     async def _call_gemini(
         self,

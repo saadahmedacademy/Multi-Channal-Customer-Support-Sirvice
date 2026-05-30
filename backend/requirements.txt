@@ -20,6 +20,9 @@ email-validator==2.1.0
 httpx==0.26.0
 aiohttp==3.9.1
 
+# Hugging Face Inference
+huggingface_hub>=0.23.0
+
 # Environment
 python-dotenv==1.0.0
 
