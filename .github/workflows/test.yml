@@ -62,7 +62,7 @@ jobs:
             -m unit
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v6
         with:
           file: ./coverage.xml
           flags: unittests
@@ -122,7 +122,7 @@ jobs:
             -m integration
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v6
         with:
           file: ./coverage.xml
           flags: integration
@@ -155,7 +155,7 @@ jobs:
             -m api
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v6
         with:
           file: ./coverage.xml
           flags: api
