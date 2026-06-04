@@ -17,7 +17,9 @@ class KnowledgeBaseRepository:
         """
         Search for knowledge base entries similar to query.
 
-        Uses pgvector cosine similarity for semantic search.
+        Falls back to keyword-based text search since embedding generation
+        requires an external API (e.g., OpenAI, Gemini) that must be
+        configured separately.
 
         Args:
             query: Search query text
@@ -27,28 +29,7 @@ class KnowledgeBaseRepository:
         Returns:
             List of knowledge base entries with similarity scores
         """
-        # Note: In production, you'd use an embedding API to convert query to vector
-        # For now, we use a simpler text-based search fallback
-        async with db.acquire() as conn:
-            rows = await conn.fetch("""
-                SELECT id, title, content, category,
-                       1.0 - (embedding <=> embedding) as similarity
-                FROM knowledge_base
-                WHERE 1.0 - (embedding <=> embedding) > $1
-                ORDER BY similarity DESC
-                LIMIT $2
-            """, threshold, limit)
-
-            return [
-                {
-                    "id": str(row["id"]),
-                    "title": row["title"],
-                    "content": row["content"],
-                    "category": row["category"],
-                    "similarity": float(row["similarity"])
-                }
-                for row in rows
-            ]
+        return await self.search_by_keyword(query, limit)
 
     async def search_by_keyword(
         self,

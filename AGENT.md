@@ -176,4 +176,20 @@ pytest tests/unit/test_worker.py   # Specific test
 
 ---
 
-**Version**: 1.0.0 | **Updated**: 2026-05-14 | **License**: MIT
+## 🤖 AI Rules
+
+- **Always ask before running any command** — Never execute commands without explicit user approval first.
+
+### Workflow
+
+1. **Plan First**: For complex tasks, major refactors, or architectural changes, always research thoroughly and wait for approval before executing code.
+2. **Execute Safely**: Break down tasks, make changes iteratively, and verify correctness.
+3. **Code Integrity**: Preserve existing comments and docstrings. Follow existing style (PEP 8, ESLint).
+4. **Aesthetics First**: When creating UI, prioritize rich, dynamic, and premium designs.
+5. **Context Awareness**: Keep this file updated as architecture evolves.
+
+
+
+---
+
+**Version**: 1.0.0 | **Updated**: 2026-06-04 | **License**: MIT

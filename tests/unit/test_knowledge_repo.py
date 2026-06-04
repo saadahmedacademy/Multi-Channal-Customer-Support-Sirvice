@@ -35,90 +35,52 @@ def knowledge_repo():
 # ============== Semantic Search Tests ==============
 
 class TestKnowledgeBaseSemanticSearch:
-    """Tests for semantic search functionality."""
+    """Tests for semantic search functionality.
+
+    Currently falls back to keyword search since embedding generation
+    requires an external API. Tests verify the delegation works.
+    """
 
     @pytest.mark.asyncio
     @pytest.mark.unit
-    async def test_search_similar_returns_results(self, knowledge_repo, mock_db_conn):
-        """Test semantic search returns matching entries."""
-        mock_db, mock_conn = mock_db_conn
-        
-        # Mock database response
-        mock_entry = {
-            "id": uuid4(),
-            "title": "API Authentication",
-            "content": "How to authenticate with our API using API keys",
-            "category": "howto",
-            "similarity": 0.85
-        }
-        mock_conn.fetch = AsyncMock(return_value=[mock_entry])
-
-        results = await knowledge_repo.search_similar("How do I login?", limit=5, threshold=0.7)
-
-        assert len(results) == 1
-        assert results[0]["title"] == "API Authentication"
-        assert results[0]["similarity"] == 0.85
-        assert "content" in results[0]
-        assert "category" in results[0]
+    async def test_search_similar_delegates_to_keyword_search(self, knowledge_repo):
+        """Test semantic search delegates to keyword search."""
+        expected_results = [{"title": "API Auth", "content": "Content", "category": "howto"}]
+        with patch.object(knowledge_repo, 'search_by_keyword', new=AsyncMock(return_value=expected_results)) as mock_keyword:
+            results = await knowledge_repo.search_similar("How do I login?", limit=5, threshold=0.7)
+            assert results == expected_results
+            mock_keyword.assert_called_once_with("How do I login?", 5)
 
     @pytest.mark.asyncio
     @pytest.mark.unit
-    async def test_search_similar_empty_results(self, knowledge_repo, mock_db_conn):
+    async def test_search_similar_empty_results(self, knowledge_repo):
         """Test semantic search with no matches."""
-        mock_db, mock_conn = mock_db_conn
-        mock_conn.fetch = AsyncMock(return_value=[])
-
-        results = await knowledge_repo.search_similar("random query", limit=5)
-
-        assert len(results) == 0
-        mock_conn.fetch.assert_called_once()
+        with patch.object(knowledge_repo, 'search_by_keyword', new=AsyncMock(return_value=[])) as mock_keyword:
+            results = await knowledge_repo.search_similar("random query", limit=5)
+            assert len(results) == 0
+            mock_keyword.assert_called_once_with("random query", 5)
 
     @pytest.mark.asyncio
     @pytest.mark.unit
-    async def test_search_similar_respects_threshold(self, knowledge_repo, mock_db_conn):
-        """Test that threshold parameter is passed to query."""
-        mock_db, mock_conn = mock_db_conn
-        mock_conn.fetch = AsyncMock(return_value=[])
-
-        await knowledge_repo.search_similar("query", threshold=0.9)
-
-        # Verify the query contains threshold reference
-        assert mock_conn.fetch.called
-        query = mock_conn.fetch.call_args[0][0]
-        assert "$1" in query  # First param placeholder
+    async def test_search_similar_respects_limit(self, knowledge_repo):
+        """Test that limit parameter is passed through."""
+        with patch.object(knowledge_repo, 'search_by_keyword', new=AsyncMock(return_value=[])) as mock_keyword:
+            await knowledge_repo.search_similar("query", limit=10)
+            mock_keyword.assert_called_once_with("query", 10)
 
     @pytest.mark.asyncio
     @pytest.mark.unit
-    async def test_search_similar_respects_limit(self, knowledge_repo, mock_db_conn):
-        """Test that limit parameter is passed to query."""
-        mock_db, mock_conn = mock_db_conn
-        mock_conn.fetch = AsyncMock(return_value=[])
-
-        await knowledge_repo.search_similar("query", limit=10)
-
-        # Verify the query contains limit reference
-        assert mock_conn.fetch.called
-        query = mock_conn.fetch.call_args[0][0]
-        assert "$2" in query  # Second param placeholder
-
-    @pytest.mark.asyncio
-    @pytest.mark.unit
-    async def test_search_similar_multiple_results(self, knowledge_repo, mock_db_conn):
+    async def test_search_similar_multiple_results(self, knowledge_repo):
         """Test semantic search with multiple results."""
-        mock_db, mock_conn = mock_db_conn
-        
         mock_entries = [
-            {"id": uuid4(), "title": "Getting Started", "content": "Content 1", "category": "howto", "similarity": 0.9},
-            {"id": uuid4(), "title": "API Basics", "content": "Content 2", "category": "feature", "similarity": 0.8},
-            {"id": uuid4(), "title": "Authentication", "content": "Content 3", "category": "howto", "similarity": 0.75}
+            {"title": "Getting Started", "content": "Content 1", "category": "howto"},
+            {"title": "API Basics", "content": "Content 2", "category": "feature"},
+            {"title": "Authentication", "content": "Content 3", "category": "howto"},
         ]
-        mock_conn.fetch = AsyncMock(return_value=mock_entries)
-
-        results = await knowledge_repo.search_similar("API guide")
-
-        assert len(results) == 3
-        # Results should be ordered by similarity
-        assert results[0]["similarity"] >= results[1]["similarity"]
+        with patch.object(knowledge_repo, 'search_by_keyword', new=AsyncMock(return_value=mock_entries)) as mock_keyword:
+            results = await knowledge_repo.search_similar("API guide")
+            assert len(results) == 3
+            mock_keyword.assert_called_once_with("API guide", 5)
 
 
 # ============== Keyword Search Tests ==============

@@ -33,8 +33,12 @@ async def lifespan(app: FastAPI):
         logger.info("Database connection initialized")
         
         # Start queue producer
-        await queue_client.start_producer()
-        logger.info("Queue producer started")
+        try:
+            await queue_client.start_producer()
+            logger.info("Queue producer started")
+        except Exception as e:
+            logger.warning(f"Queue producer failed to start (non-fatal): {e}")
+            logger.warning("Messages will not be queued until Redpanda is available")
         
     except Exception as e:
         logger.error(f"Startup failed: {e}")

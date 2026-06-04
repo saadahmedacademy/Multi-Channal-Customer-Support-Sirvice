@@ -5,8 +5,17 @@ import SupportForm from '@/components/SupportForm';
 import TicketStatus from '@/components/TicketStatus';
 import { useTheme } from '@/components/ThemeProvider';
 
+const CATEGORY_DESCRIPTIONS = {
+  'Technical Support': 'Get help with technical issues, software bugs, integration problems, API errors, and system configurations.',
+  'Billing Inquiries': 'Questions about invoices, payments, subscriptions, refunds, and account billing details.',
+  'Bug Reports': 'Report software bugs, unexpected behavior, errors, crashes, or any issues you encounter while using our service.',
+  'Feature Requests': 'Suggest new features, improvements, or enhancements you would like to see in our product.',
+  'General Questions': 'Any other questions about our service, policies, documentation, or general information.'
+};
+
 export default function Home() {
   const [activeTab, setActiveTab] = useState<'submit' | 'check'>('submit');
+  const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
   const { theme, toggleTheme, mounted } = useTheme();
 
   return (
@@ -156,25 +165,80 @@ export default function Home() {
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white">Support Categories</h3>
               </div>
               <ul className="space-y-3">
-                <li className="flex items-center text-sm text-gray-700 dark:text-gray-200 p-2 rounded-lg hover:bg-white/50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer">
+                <li
+                  className="relative flex items-center text-sm text-gray-700 dark:text-gray-200 p-2 rounded-lg hover:bg-white/50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer"
+                  onMouseEnter={() => setHoveredCategory('Technical Support')}
+                  onMouseLeave={() => setHoveredCategory(null)}
+                >
                   <span className="w-3 h-3 mr-3 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full shadow-lg shadow-blue-500/50"></span>
                   <span className="font-medium">Technical Support</span>
+                  {hoveredCategory === 'Technical Support' && (
+                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-64 p-3 bg-gray-900 dark:bg-gray-800 text-white text-xs rounded-lg shadow-2xl z-50 border border-gray-700 md:bottom-auto md:left-auto md:right-full md:top-1/2 md:transform md:translate-x-0 md:-translate-y-1/2 md:mb-0 md:mr-2">
+                      <div className="absolute top-full left-1/2 transform -translate-x-1/2 -translate-y-1 w-2 h-2 bg-gray-900 dark:bg-gray-800 rotate-45 border-b border-r border-gray-700 md:hidden"></div>
+                      <div className="hidden md:block absolute right-0 top-1/2 transform translate-x-1 -translate-y-1/2 w-2 h-2 bg-gray-900 dark:bg-gray-800 rotate-45 border-r border-t border-gray-700"></div>
+                      {CATEGORY_DESCRIPTIONS['Technical Support']}
+                    </div>
+                  )}
                 </li>
-                <li className="flex items-center text-sm text-gray-700 dark:text-gray-200 p-2 rounded-lg hover:bg-white/50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer">
+                <li
+                  className="relative flex items-center text-sm text-gray-700 dark:text-gray-200 p-2 rounded-lg hover:bg-white/50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer"
+                  onMouseEnter={() => setHoveredCategory('Billing Inquiries')}
+                  onMouseLeave={() => setHoveredCategory(null)}
+                >
                   <span className="w-3 h-3 mr-3 bg-gradient-to-br from-green-400 to-green-600 rounded-full shadow-lg shadow-green-500/50"></span>
                   <span className="font-medium">Billing Inquiries</span>
+                  {hoveredCategory === 'Billing Inquiries' && (
+                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-64 p-3 bg-gray-900 dark:bg-gray-800 text-white text-xs rounded-lg shadow-2xl z-50 border border-gray-700 md:bottom-auto md:left-auto md:right-full md:top-1/2 md:transform md:translate-x-0 md:-translate-y-1/2 md:mb-0 md:mr-2">
+                      <div className="absolute top-full left-1/2 transform -translate-x-1/2 -translate-y-1 w-2 h-2 bg-gray-900 dark:bg-gray-800 rotate-45 border-b border-r border-gray-700 md:hidden"></div>
+                      <div className="hidden md:block absolute right-0 top-1/2 transform translate-x-1 -translate-y-1/2 w-2 h-2 bg-gray-900 dark:bg-gray-800 rotate-45 border-r border-t border-gray-700"></div>
+                      {CATEGORY_DESCRIPTIONS['Billing Inquiries']}
+                    </div>
+                  )}
                 </li>
-                <li className="flex items-center text-sm text-gray-700 dark:text-gray-200 p-2 rounded-lg hover:bg-white/50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer">
+                <li
+                  className="relative flex items-center text-sm text-gray-700 dark:text-gray-200 p-2 rounded-lg hover:bg-white/50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer"
+                  onMouseEnter={() => setHoveredCategory('Bug Reports')}
+                  onMouseLeave={() => setHoveredCategory(null)}
+                >
                   <span className="w-3 h-3 mr-3 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full shadow-lg shadow-purple-500/50"></span>
                   <span className="font-medium">Bug Reports</span>
+                  {hoveredCategory === 'Bug Reports' && (
+                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-64 p-3 bg-gray-900 dark:bg-gray-800 text-white text-xs rounded-lg shadow-2xl z-50 border border-gray-700 md:bottom-auto md:left-auto md:right-full md:top-1/2 md:transform md:translate-x-0 md:-translate-y-1/2 md:mb-0 md:mr-2">
+                      <div className="absolute top-full left-1/2 transform -translate-x-1/2 -translate-y-1 w-2 h-2 bg-gray-900 dark:bg-gray-800 rotate-45 border-b border-r border-gray-700 md:hidden"></div>
+                      <div className="hidden md:block absolute right-0 top-1/2 transform translate-x-1 -translate-y-1/2 w-2 h-2 bg-gray-900 dark:bg-gray-800 rotate-45 border-r border-t border-gray-700"></div>
+                      {CATEGORY_DESCRIPTIONS['Bug Reports']}
+                    </div>
+                  )}
                 </li>
-                <li className="flex items-center text-sm text-gray-700 dark:text-gray-200 p-2 rounded-lg hover:bg-white/50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer">
+                <li
+                  className="relative flex items-center text-sm text-gray-700 dark:text-gray-200 p-2 rounded-lg hover:bg-white/50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer"
+                  onMouseEnter={() => setHoveredCategory('Feature Requests')}
+                  onMouseLeave={() => setHoveredCategory(null)}
+                >
                   <span className="w-3 h-3 mr-3 bg-gradient-to-br from-yellow-400 to-yellow-600 rounded-full shadow-lg shadow-yellow-500/50"></span>
                   <span className="font-medium">Feature Requests</span>
+                  {hoveredCategory === 'Feature Requests' && (
+                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-64 p-3 bg-gray-900 dark:bg-gray-800 text-white text-xs rounded-lg shadow-2xl z-50 border border-gray-700 md:bottom-auto md:left-auto md:right-full md:top-1/2 md:transform md:translate-x-0 md:-translate-y-1/2 md:mb-0 md:mr-2">
+                      <div className="absolute top-full left-1/2 transform -translate-x-1/2 -translate-y-1 w-2 h-2 bg-gray-900 dark:bg-gray-800 rotate-45 border-b border-r border-gray-700 md:hidden"></div>
+                      <div className="hidden md:block absolute right-0 top-1/2 transform translate-x-1 -translate-y-1/2 w-2 h-2 bg-gray-900 dark:bg-gray-800 rotate-45 border-r border-t border-gray-700"></div>
+                      {CATEGORY_DESCRIPTIONS['Feature Requests']}
+                    </div>
+                  )}
                 </li>
-                <li className="flex items-center text-sm text-gray-700 dark:text-gray-200 p-2 rounded-lg hover:bg-white/50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer">
+                <li
+                  className="relative flex items-center text-sm text-gray-700 dark:text-gray-200 p-2 rounded-lg hover:bg-white/50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer"
+                  onMouseEnter={() => setHoveredCategory('General Questions')}
+                  onMouseLeave={() => setHoveredCategory(null)}
+                >
                   <span className="w-3 h-3 mr-3 bg-gradient-to-br from-gray-400 to-gray-600 rounded-full shadow-lg shadow-gray-500/50"></span>
                   <span className="font-medium">General Questions</span>
+                  {hoveredCategory === 'General Questions' && (
+                    <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-64 p-3 bg-gray-900 dark:bg-gray-800 text-white text-xs rounded-lg shadow-2xl z-50 border border-gray-700 md:bottom-auto md:left-auto md:right-full md:top-1/2 md:transform md:translate-x-0 md:-translate-y-1/2 md:mb-0 md:mr-2">
+                      <div className="absolute top-full left-1/2 transform -translate-x-1/2 -translate-y-1 w-2 h-2 bg-gray-900 dark:bg-gray-800 rotate-45 border-b border-r border-gray-700 md:hidden"></div>
+                      <div className="hidden md:block absolute right-0 top-1/2 transform translate-x-1 -translate-y-1/2 w-2 h-2 bg-gray-900 dark:bg-gray-800 rotate-45 border-r border-t border-gray-700"></div>
+                      {CATEGORY_DESCRIPTIONS['General Questions']}
+                    </div>
+                  )}
                 </li>
               </ul>
             </div>
@@ -190,13 +254,13 @@ export default function Home() {
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white">Contact Us</h3>
               </div>
               <div className="space-y-3">
-                <a href="mailto:support@example.com" className="flex items-center text-sm text-gray-700 dark:text-gray-200 p-3 rounded-lg hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 dark:hover:from-indigo-900/20 dark:hover:to-purple-900/20 transition-all group/item">
+                <a href="mailto:saadqurashiazeemqurashi@gmail.com" className="flex items-center text-sm text-gray-700 dark:text-gray-200 p-3 rounded-lg hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 dark:hover:from-indigo-900/20 dark:hover:to-purple-900/20 transition-all group/item">
                   <div className="p-2 bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900/50 dark:to-purple-900/50 rounded-lg mr-3 group-hover/item:scale-110 transition-transform">
                     <svg className="w-4 h-4 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                     </svg>
                   </div>
-                  <span className="font-medium">support@example.com</span>
+                  <span className="font-medium">saadqurashiazeemqurashi@gmail.com</span>
                 </a>
                 <a href="https://wa.me/1234567890" className="flex items-center text-sm text-gray-700 dark:text-gray-200 p-3 rounded-lg hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 dark:hover:from-green-900/20 dark:hover:to-emerald-900/20 transition-all group/item">
                   <div className="p-2 bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-900/50 dark:to-emerald-900/50 rounded-lg mr-3 group-hover/item:scale-110 transition-transform">

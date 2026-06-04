@@ -17,7 +17,7 @@ from backend.integrations.email_client import gmail_client
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/webhooks", tags=["webhooks"])
+router = APIRouter(tags=["webhooks"])
 
 
 def decode_mime_words(text: str) -> str:
