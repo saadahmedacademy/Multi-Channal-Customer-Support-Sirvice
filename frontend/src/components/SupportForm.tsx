@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 const CATEGORIES = [
   { value: 'general', label: 'General Question' },
@@ -45,6 +45,12 @@ export default function SupportForm() {
   const [ticketId, setTicketId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showCopyNotification, setShowCopyNotification] = useState(false);
+
+  useEffect(() => {
+    if (status === 'success') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [status]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 interface Message {
   id: string;
@@ -73,6 +73,12 @@ export default function TicketStatus() {
       setStatus('error');
     }
   };
+
+  useEffect(() => {
+    if (status === 'success') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [status]);
 
   const formatDateTime = (dateString: string) => {
     return new Date(dateString).toLocaleString('en-US', {
@@ -173,10 +179,25 @@ export default function TicketStatus() {
                     }`}>
                       {message.role === 'customer' ? 'You' : message.role === 'agent' ? 'Support Agent' : 'System'}
                     </span>
-                    <span className={`text-xs ${
-                      message.role === 'customer' ? 'text-blue-100' : 'text-gray-400 dark:text-gray-500'
-                    }`}>
-                      {new Date(message.created_at).toLocaleTimeString()}
+                    <span className="flex items-center space-x-2">
+                      <span className={`text-xs ${
+                        message.role === 'customer' ? 'text-blue-100' : 'text-gray-400 dark:text-gray-500'
+                      }`}>
+                        {new Date(message.created_at).toLocaleTimeString()}
+                      </span>
+                      <button
+                        onClick={() => copyToClipboard(message.content)}
+                        className={`p-1 rounded transition-colors ${
+                          message.role === 'customer'
+                            ? 'hover:bg-blue-500 text-blue-100'
+                            : 'hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-400 dark:text-gray-500'
+                        }`}
+                        title="Copy message"
+                      >
+                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                        </svg>
+                      </button>
                     </span>
                   </div>
                   <p className="text-sm whitespace-pre-wrap">{message.content}</p>
