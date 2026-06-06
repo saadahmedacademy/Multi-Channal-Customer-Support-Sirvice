@@ -116,29 +116,29 @@ class GmailClient:
                 "grant_type": "refresh_token"
             }
 
-            async with await self._get_http_client() as client:
-                response = await client.post(
-                    token_url,
-                    data=payload,
-                    headers={"Content-Type": "application/x-www-form-urlencoded"},
-                    timeout=10
-                )
-                response.raise_for_status()
+            client = await self._get_http_client()
+            response = await client.post(
+                token_url,
+                data=payload,
+                headers={"Content-Type": "application/x-www-form-urlencoded"},
+                timeout=10
+            )
+            response.raise_for_status()
 
-                data = response.json()
-                new_access_token = data.get("access_token")
+            data = response.json()
+            new_access_token = data.get("access_token")
 
-                if not new_access_token:
-                    logger.error("Token refresh response missing access_token")
-                    return False
+            if not new_access_token:
+                logger.error("Token refresh response missing access_token")
+                return False
 
-                # Update the token
-                self.oauth_token = new_access_token
-                logger.info("Gmail OAuth token refreshed successfully")
+            # Update the token
+            self.oauth_token = new_access_token
+            logger.info("Gmail OAuth token refreshed successfully")
 
-                # Note: In production, you should persist the new token to settings/database
-                # For now, it will work until the worker restarts
-                return True
+            # Note: In production, you should persist the new token to settings/database
+            # For now, it will work until the worker restarts
+            return True
 
         except httpx.HTTPStatusError as e:
             logger.error(f"Token refresh failed: {e.response.status_code} - {e.response.text}")
@@ -222,20 +222,20 @@ class GmailClient:
         # Try sending, with automatic token refresh on 401
         for attempt in range(2):
             try:
-                async with await self._get_http_client() as client:
-                    response = await client.post(
-                        endpoint,
-                        headers=self._get_headers(),
-                        json=payload,
-                        timeout=30
-                    )
-                    response.raise_for_status()
+                client = await self._get_http_client()
+                response = await client.post(
+                    endpoint,
+                    headers=self._get_headers(),
+                    json=payload,
+                    timeout=30
+                )
+                response.raise_for_status()
 
-                    result = response.json()
-                    self._increment_email_count()
+                result = response.json()
+                self._increment_email_count()
 
-                    logger.info(f"Gmail email sent to {to_email}: {result.get('id')}")
-                    return result
+                logger.info(f"Gmail email sent to {to_email}: {result.get('id')}")
+                return result
 
             except httpx.HTTPStatusError as e:
                 # Handle 401 Unauthorized - token expired
@@ -313,8 +313,9 @@ class GmailClient:
         endpoint = f"{self.base_url}/users/me/messages/{message_id}"
         params = {"format": format}
 
-        try:
-            async with await self._get_http_client() as client:
+        for attempt in range(2):
+            try:
+                client = await self._get_http_client()
                 response = await client.get(
                     endpoint,
                     headers=self._get_headers(),
@@ -325,9 +326,19 @@ class GmailClient:
 
                 return response.json()
 
-        except httpx.HTTPError as e:
-            logger.error(f"Failed to get Gmail message: {e}")
-            return {"error": str(e)}
+            except httpx.HTTPStatusError as e:
+                if e.response.status_code == 401 and attempt == 0:
+                    logger.warning("Gmail token expired during get_message, attempting refresh...")
+                    if await self._refresh_access_token():
+                        continue
+                    return {"error": "Authentication failed", "status_code": 401}
+                logger.error(f"Failed to get Gmail message: {e}")
+                return {"error": str(e), "status_code": getattr(e.response, 'status_code', None)}
+            except httpx.HTTPError as e:
+                logger.error(f"Failed to get Gmail message: {e}")
+                return {"error": str(e)}
+
+        return {"error": "Failed after retry"}
 
     async def list_messages(
         self,
@@ -359,8 +370,9 @@ class GmailClient:
             for label_id in label_ids:
                 params.setdefault("labelIds", []).append(label_id)
 
-        try:
-            async with await self._get_http_client() as client:
+        for attempt in range(2):
+            try:
+                client = await self._get_http_client()
                 response = await client.get(
                     endpoint,
                     headers=self._get_headers(),
@@ -371,9 +383,19 @@ class GmailClient:
 
                 return response.json()
 
-        except httpx.HTTPError as e:
-            logger.error(f"Failed to list Gmail messages: {e}")
-            return {"error": str(e)}
+            except httpx.HTTPStatusError as e:
+                if e.response.status_code == 401 and attempt == 0:
+                    logger.warning("Gmail token expired during list_messages, attempting refresh...")
+                    if await self._refresh_access_token():
+                        continue
+                    return {"error": "Authentication failed", "status_code": 401}
+                logger.error(f"Failed to list Gmail messages: {e}")
+                return {"error": str(e), "status_code": getattr(e.response, 'status_code', None)}
+            except httpx.HTTPError as e:
+                logger.error(f"Failed to list Gmail messages: {e}")
+                return {"error": str(e)}
+
+        return {"error": "Failed after retry"}
 
     async def mark_as_read(self, message_id: str) -> Dict[str, Any]:
         """
@@ -392,8 +414,9 @@ class GmailClient:
         endpoint = f"{self.base_url}/users/me/messages/{message_id}/modify"
         payload = {"removeLabelIds": ["UNREAD"]}
 
-        try:
-            async with await self._get_http_client() as client:
+        for attempt in range(2):
+            try:
+                client = await self._get_http_client()
                 response = await client.post(
                     endpoint,
                     headers=self._get_headers(),
@@ -404,9 +427,19 @@ class GmailClient:
 
                 return response.json()
 
-        except httpx.HTTPError as e:
-            logger.error(f"Failed to mark message as read: {e}")
-            return {"error": str(e)}
+            except httpx.HTTPStatusError as e:
+                if e.response.status_code == 401 and attempt == 0:
+                    logger.warning("Gmail token expired during mark_as_read, attempting refresh...")
+                    if await self._refresh_access_token():
+                        continue
+                    return {"error": "Authentication failed", "status_code": 401}
+                logger.error(f"Failed to mark message as read: {e}")
+                return {"error": str(e), "status_code": getattr(e.response, 'status_code', None)}
+            except httpx.HTTPError as e:
+                logger.error(f"Failed to mark message as read: {e}")
+                return {"error": str(e)}
+
+        return {"error": "Failed after retry"}
 
     async def add_label(self, message_id: str, label_id: str) -> Dict[str, Any]:
         """
@@ -427,16 +460,16 @@ class GmailClient:
         payload = {"addLabelIds": [label_id]}
 
         try:
-            async with await self._get_http_client() as client:
-                response = await client.post(
-                    endpoint,
-                    headers=self._get_headers(),
-                    json=payload,
-                    timeout=30
-                )
-                response.raise_for_status()
+            client = await self._get_http_client()
+            response = await client.post(
+                endpoint,
+                headers=self._get_headers(),
+                json=payload,
+                timeout=30
+            )
+            response.raise_for_status()
 
-                return response.json()
+            return response.json()
 
         except httpx.HTTPError as e:
             logger.error(f"Failed to add label: {e}")
