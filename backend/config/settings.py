@@ -48,7 +48,7 @@ class Settings(BaseSettings):
         description="Hugging Face API key"
     )
     huggingface_model: Optional[str] = Field(
-        default="mistralai/Mixtral-8x7B-Instruct-v0.1",
+        default="meta-llama/Meta-Llama-3-8B-Instruct",
         description="Hugging Face model to use"
     )
 
@@ -142,7 +142,7 @@ class Settings(BaseSettings):
         description="AI model to use (OpenRouter model string)"
     )
     ai_timeout: int = Field(
-        default=10,
+        default=30,
         description="AI API timeout in seconds"
     )
     max_tokens: int = Field(

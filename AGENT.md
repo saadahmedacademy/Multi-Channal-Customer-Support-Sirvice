@@ -179,6 +179,7 @@ pytest tests/unit/test_worker.py   # Specific test
 ## 🤖 AI Rules
 
 - **Always ask before running any command** — Never execute commands without explicit user approval first.
+- **Activate .venv first** — Before installing any package or running any script, activate the virtual environment with `source .venv/bin/activate`.
 
 ### Workflow
 

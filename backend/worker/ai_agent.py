@@ -324,26 +324,26 @@ IMPORTANT:
             "temperature": 0.7
         }
 
-        async with await self._get_http_client() as client:
-            try:
-                response = await client.post(
-                    self.openrouter_url,
-                    headers=headers,
-                    json=payload,
-                    timeout=self.timeout
-                )
-                response.raise_for_status()
+        client = await self._get_http_client()
+        try:
+            response = await client.post(
+                self.openrouter_url,
+                headers=headers,
+                json=payload,
+                timeout=self.timeout
+            )
+            response.raise_for_status()
 
-                data = response.json()
-                content = data["choices"][0]["message"]["content"]
-                tokens_used = data.get("usage", {}).get("total_tokens", 0)
+            data = response.json()
+            content = data["choices"][0]["message"]["content"]
+            tokens_used = data.get("usage", {}).get("total_tokens", 0)
 
-                logger.info(f"OpenRouter response generated ({tokens_used} tokens)")
-                return content.strip(), tokens_used
+            logger.info(f"OpenRouter response generated ({tokens_used} tokens)")
+            return content.strip(), tokens_used
 
-            except httpx.HTTPError as e:
-                logger.error(f"OpenRouter API error: {e}")
-                return None, 0
+        except httpx.HTTPError as e:
+            logger.error(f"OpenRouter API error: {e}")
+            return None, 0
 
     async def _call_huggingface(
         self,
@@ -437,26 +437,26 @@ IMPORTANT:
             }
         }
 
-        async with await self._get_http_client() as client:
-            try:
-                response = await client.post(
-                    self.gemini_url,
-                    headers=headers,
-                    json=payload,
-                    timeout=self.timeout
-                )
-                response.raise_for_status()
+        client = await self._get_http_client()
+        try:
+            response = await client.post(
+                self.gemini_url,
+                headers=headers,
+                json=payload,
+                timeout=self.timeout
+            )
+            response.raise_for_status()
 
-                data = response.json()
-                content = data["candidates"][0]["content"]["parts"][0]["text"]
-                tokens_used = len(message.split())  # Rough estimate
+            data = response.json()
+            content = data["candidates"][0]["content"]["parts"][0]["text"]
+            tokens_used = len(message.split())  # Rough estimate
 
-                logger.info(f"Gemini response generated (~{tokens_used} tokens)")
-                return content.strip(), tokens_used
+            logger.info(f"Gemini response generated (~{tokens_used} tokens)")
+            return content.strip(), tokens_used
 
-            except httpx.HTTPError as e:
-                logger.error(f"Gemini API error: {e}")
-                return None, 0
+        except httpx.HTTPError as e:
+            logger.error(f"Gemini API error: {e}")
+            return None, 0
 
     def _get_fallback_response(self, channel: str) -> str:
         """
