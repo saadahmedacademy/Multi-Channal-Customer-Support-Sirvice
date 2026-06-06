@@ -370,11 +370,11 @@ class MessageProcessor:
         # Step 7: Send response via channel
         if channel == "whatsapp":
             await self.send_whatsapp_response(customer_info, response_text, message.get("message_id"))
-        elif channel == "email":
+        elif channel in ("email", "web_form"):
             await self.send_email_response(
                 customer_info,
                 response_text,
-                message.get("subject", "Support Request"),
+                message.get("subject") or customer_message.get("subject", "Support Request"),
                 message.get("message_id"),
                 message.get("in_reply_to")
             )
