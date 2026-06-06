@@ -19,6 +19,8 @@ jobs:
           HF_SPACE: ${{ secrets.HF_SPACE }}
         run: |
           git checkout --orphan clean-main
+          git config user.email "deploy@bot.com"
+          git config user.name "Deploy Bot"
           git add -A
           git commit -m "Deploy $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
           git push --force https://$HF_USERNAME:$HF_TOKEN@huggingface.co/spaces/$HF_USERNAME/$HF_SPACE clean-main:main
