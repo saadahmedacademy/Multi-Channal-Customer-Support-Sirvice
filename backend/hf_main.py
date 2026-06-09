@@ -56,6 +56,9 @@ async def sync_gmail_emails(max_results: int = 10) -> int:
     if not gmail_client.is_configured():
         return 0
 
+    if os.getenv("DISABLE_EMAIL_SYNC", "").lower() in ("1", "true", "yes"):
+        return 0
+
     try:
         result = await gmail_client.list_messages(
             query=f"is:unread to:{gmail_client.support_email}",
