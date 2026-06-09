@@ -91,6 +91,22 @@ async def sync_gmail_emails(max_results: int = 10) -> int:
             if "<" in from_header and ">" in from_header:
                 from_email = from_header.split("<")[1].split(">")[0].strip()
 
+            skip_reason = None
+            if headers.get("List-Unsubscribe") or headers.get("List-ID"):
+                skip_reason = "mailing list"
+            if headers.get("Auto-Submitted", "").lower() in ("auto-generated", "auto-replied"):
+                skip_reason = "auto-generated"
+            if headers.get("Precedence", "").lower() in ("bulk", "list", "junk"):
+                skip_reason = "bulk/list"
+            from_lower = from_email.lower()
+            if any(prefix in from_lower for prefix in ["noreply", "no-reply", "donotreply", "notification", "mailer-daemon"]):
+                skip_reason = f"no-reply sender ({from_email})"
+            if skip_reason:
+                logger.info(f"Skipping {skip_reason} email {message_id}: {subject}")
+                await gmail_client.mark_as_read(message_id)
+                processed += 1
+                continue
+
             body = ""
             html_body = ""
 
