@@ -58,7 +58,7 @@ async def sync_gmail_emails(max_results: int = 10) -> int:
 
     try:
         result = await gmail_client.list_messages(
-            query=f"from:not(me) is:unread to:{gmail_client.support_email}",
+            query=f"is:unread to:{gmail_client.support_email}",
             max_results=max_results
         )
 
