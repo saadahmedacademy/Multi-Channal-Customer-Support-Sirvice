@@ -29,6 +29,7 @@ from backend.worker.message_processor import MessageProcessor
 logger = get_logger(__name__)
 PORT = int(os.getenv("PORT", "7860"))
 EMAIL_SYNC_INTERVAL = int(os.getenv("EMAIL_SYNC_INTERVAL", "30"))
+GMAIL_SYNC_LABEL = os.getenv("GMAIL_SYNC_LABEL", "SupportTicket")
 
 
 async def run_worker(stop_event: asyncio.Event) -> None:
@@ -61,7 +62,7 @@ async def sync_gmail_emails(max_results: int = 10) -> int:
 
     try:
         result = await gmail_client.list_messages(
-            query=f"is:unread to:{gmail_client.support_email}",
+            query=f"label:{GMAIL_SYNC_LABEL} is:unread",
             max_results=max_results
         )
 
