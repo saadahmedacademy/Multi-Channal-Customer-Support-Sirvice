@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { copyToClipboard, fallbackCopy } from '@/lib/clipboard';
+import { useToast } from '@/lib/toast';
 
 const CATEGORIES = [
   { value: 'general', label: 'General Question' },
@@ -44,11 +46,22 @@ export default function SupportForm() {
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
   const [ticketId, setTicketId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [showCopyNotification, setShowCopyNotification] = useState(false);
+  const { showToast } = useToast();
 
   useEffect(() => {
     if (status === 'success') {
       window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [status]);
+
+  useEffect(() => {
+    if (status === 'submitting') {
+      const handler = (e: BeforeUnloadEvent) => {
+        e.preventDefault();
+        e.returnValue = '';
+      };
+      window.addEventListener('beforeunload', handler);
+      return () => window.removeEventListener('beforeunload', handler);
     }
   }, [status]);
 
@@ -57,13 +70,17 @@ export default function SupportForm() {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const copyToClipboard = async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setShowCopyNotification(true);
-      setTimeout(() => setShowCopyNotification(false), 3000);
-    } catch (err) {
-      console.error('Failed to copy:', err);
+  const handleCopy = async (text: string) => {
+    const ok = await copyToClipboard(text);
+    if (ok) {
+      showToast('Ticket ID copied!', 'success');
+    } else {
+      const fallbackOk = fallbackCopy(text);
+      if (fallbackOk) {
+        showToast('Ticket ID copied!', 'success');
+      } else {
+        showToast('Could not copy. Please select the ID manually.', 'error');
+      }
     }
   };
 
@@ -110,6 +127,7 @@ export default function SupportForm() {
       const data: FormResponse = await response.json();
       setTicketId(data.ticket_id);
       setStatus('success');
+      showToast('Support request submitted successfully!', 'success');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Submission failed');
       setStatus('error');
@@ -119,20 +137,7 @@ export default function SupportForm() {
   if (status === 'success' && ticketId) {
     return (
       <div className="w-full max-w-2xl mx-auto backdrop-blur-md bg-white/60 dark:bg-gray-800/60 rounded-2xl shadow-2xl border border-white/20 dark:border-gray-700/50 p-8 relative overflow-hidden">
-        {/* Animated Background */}
         <div className="absolute inset-0 bg-gradient-to-br from-green-50/50 via-emerald-50/50 to-teal-50/50 dark:from-green-900/10 dark:via-emerald-900/10 dark:to-teal-900/10 animate-pulse"></div>
-
-        {/* Copy Notification Toast */}
-        {showCopyNotification && (
-          <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 animate-bounce">
-            <div className="bg-gradient-to-r from-green-500 to-emerald-600 text-white px-6 py-3 rounded-xl shadow-2xl flex items-center space-x-3 border border-green-400">
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-              <span className="font-bold">Ticket ID copied!</span>
-            </div>
-          </div>
-        )}
 
         <div className="text-center relative z-10">
           <div className="w-20 h-20 bg-gradient-to-br from-green-400 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6 shadow-2xl shadow-green-500/50 animate-bounce">
@@ -157,7 +162,7 @@ export default function SupportForm() {
                 {ticketId}
               </p>
               <button
-                onClick={() => copyToClipboard(ticketId)}
+                onClick={() => handleCopy(ticketId)}
                 className="p-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white rounded-xl transition-all transform hover:scale-110 shadow-lg hover:shadow-xl flex items-center space-x-2"
                 title="Copy to clipboard"
               >
@@ -337,6 +342,7 @@ export default function SupportForm() {
             onChange={handleChange}
             required
             rows={6}
+            maxLength={1000}
             className="w-full px-4 py-3 border-2 border-gray-200 dark:border-gray-600 bg-white/50 dark:bg-gray-700/50 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-300 placeholder-gray-400 dark:placeholder-gray-500 backdrop-blur-sm resize-none group-hover:border-indigo-300 dark:group-hover:border-indigo-600"
             placeholder="Please describe your issue or question in detail..."
           />

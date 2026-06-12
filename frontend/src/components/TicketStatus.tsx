@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { copyToClipboard, fallbackCopy } from '@/lib/clipboard';
+import { useToast } from '@/lib/toast';
 
 interface Message {
   id: string;
@@ -35,20 +37,26 @@ const PRIORITY_COLORS: Record<string, string> = {
   critical: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200'
 };
 
+const TICKET_ID_REGEX = /^TICKET-[A-Z0-9]{6,}$/;
+
 export default function TicketStatus() {
   const [ticketId, setTicketId] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [ticketData, setTicketData] = useState<TicketStatusData | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [copyNotification, setCopyNotification] = useState<{show: boolean; text: string}>({show: false, text: ''});
+  const { showToast } = useToast();
 
-  const copyToClipboard = async (text: string, label: string = 'Copied!') => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopyNotification({show: true, text: label});
-      setTimeout(() => setCopyNotification({show: false, text: ''}), 2000);
-    } catch (err) {
-      console.error('Failed to copy:', err);
+  const handleCopy = async (text: string, label: string = 'Copied!') => {
+    const ok = await copyToClipboard(text);
+    if (ok) {
+      showToast(label, 'success');
+    } else {
+      const fallbackOk = fallbackCopy(text);
+      if (fallbackOk) {
+        showToast(label, 'success');
+      } else {
+        showToast('Could not copy. Please select the text manually.', 'error');
+      }
     }
   };
 
@@ -89,21 +97,11 @@ export default function TicketStatus() {
     });
   };
 
+  const isValidTicketId = TICKET_ID_REGEX.test(ticketId);
+
   if (status === 'success' && ticketData) {
     return (
-      <div className="w-full max-w-4xl mx-auto p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md relative">
-        {/* Copy Notification Toast */}
-        {copyNotification.show && (
-          <div className="fixed top-6 left-1/2 transform -translate-x-1/2 z-50 animate-fade-in-down">
-            <div className="bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center space-x-2">
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-              <span className="font-medium">{copyNotification.text}</span>
-            </div>
-          </div>
-        )}
-
+      <div className="w-full max-w-4xl mx-auto backdrop-blur-md bg-white/60 dark:bg-gray-800/60 rounded-2xl shadow-2xl border border-white/20 dark:border-gray-700/50 p-8">
         <div className="mb-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-3">
@@ -111,8 +109,8 @@ export default function TicketStatus() {
                 Ticket: {ticketData.ticket_id}
               </h2>
               <button
-                onClick={() => copyToClipboard(ticketData.ticket_id, 'Ticket ID copied!')}
-                className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                onClick={() => handleCopy(ticketData.ticket_id, 'Ticket ID copied!')}
+                className="p-2 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white rounded-lg transition-all transform hover:scale-110"
                 title="Copy to clipboard"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -186,7 +184,7 @@ export default function TicketStatus() {
                         {new Date(message.created_at).toLocaleTimeString()}
                       </span>
                       <button
-                        onClick={() => copyToClipboard(message.content, 'Copied!')}
+                        onClick={() => handleCopy(message.content, 'Copied!')}
                         className={`p-1 rounded transition-colors ${
                           message.role === 'customer'
                             ? 'hover:bg-blue-500 text-blue-100'
@@ -213,7 +211,7 @@ export default function TicketStatus() {
             setTicketId('');
             setTicketData(null);
           }}
-          className="mt-6 w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          className="mt-6 w-full py-3 px-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white rounded-xl hover:from-indigo-700 hover:via-purple-700 hover:to-pink-700 transition-all font-bold"
         >
           Check Another Ticket
         </button>
@@ -222,31 +220,60 @@ export default function TicketStatus() {
   }
 
   return (
-    <div className="w-full max-w-md mx-auto p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md">
-      <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Check Ticket Status</h2>
+    <div className="w-full max-w-md mx-auto backdrop-blur-md bg-white/60 dark:bg-gray-800/60 rounded-2xl shadow-2xl border border-white/20 dark:border-gray-700/50 p-8">
+      <h2 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 dark:from-indigo-400 dark:via-purple-400 dark:to-pink-400 bg-clip-text text-transparent mb-2">
+        Check Ticket Status
+      </h2>
       <p className="text-gray-600 dark:text-gray-300 mb-6">
         Enter your ticket ID to view the status and conversation history.
       </p>
 
       {error && (
-        <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-red-700 dark:text-red-300">
-          {error}
+        <div className="mb-4 p-4 bg-gradient-to-r from-red-50 to-pink-50 dark:from-red-900/20 dark:to-pink-900/20 border border-red-200/50 dark:border-red-800/50 rounded-xl text-red-700 dark:text-red-300 flex items-center space-x-3 animate-shake">
+          <svg className="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+          </svg>
+          <span className="font-medium">{error}</span>
         </div>
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label htmlFor="ticketId" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
-            Ticket ID
+          <label htmlFor="ticketId" className="block text-sm font-semibold text-gray-700 dark:text-gray-200 mb-2 flex items-center space-x-2">
+            <svg className="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" />
+            </svg>
+            <span>Ticket ID</span>
           </label>
           <input
             type="text"
             id="ticketId"
             value={ticketId}
             onChange={(e) => setTicketId(e.target.value.toUpperCase())}
+            onPaste={(e) => {
+              const pasted = e.clipboardData.getData('text');
+              const cleaned = pasted.trim().toUpperCase();
+              setTicketId(cleaned);
+              e.preventDefault();
+            }}
+            onBlur={(e) => setTicketId(e.target.value.trim().toUpperCase())}
             placeholder="TICKET-XXXXXX"
-            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent uppercase"
+            className={`w-full px-4 py-3 border-2 bg-white/50 dark:bg-gray-700/50 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-300 backdrop-blur-sm uppercase ${
+              ticketId && !isValidTicketId
+                ? 'border-red-300 dark:border-red-700'
+                : 'border-gray-200 dark:border-gray-600'
+            }`}
           />
+          {ticketId && !isValidTicketId && (
+            <p className="mt-1 text-xs text-red-500 dark:text-red-400">
+              Invalid format. Expected: TICKET-XXXXXXXX
+            </p>
+          )}
+          {isValidTicketId && (
+            <p className="mt-1 text-xs text-green-500 dark:text-green-400">
+              Valid ticket ID format
+            </p>
+          )}
           <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
             Format: TICKET-XXXXXXXX or full UUID
           </p>
@@ -255,22 +282,27 @@ export default function TicketStatus() {
         <button
           type="submit"
           disabled={status === 'loading' || !ticketId.trim()}
-          className={`w-full py-2 px-4 rounded-lg font-medium text-white transition-colors ${
-            status === 'loading'
+          className={`w-full py-3 px-4 rounded-xl font-bold text-white transition-all duration-300 transform ${
+            status === 'loading' || !ticketId.trim()
               ? 'bg-gray-400 cursor-not-allowed'
-              : 'bg-blue-600 hover:bg-blue-700'
+              : 'bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-700 hover:via-purple-700 hover:to-pink-700 hover:scale-105 shadow-lg'
           }`}
         >
           {status === 'loading' ? (
-            <span className="flex items-center justify-center">
-              <svg className="animate-spin -ml-1 mr-3 h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+            <span className="flex items-center justify-center space-x-3">
+              <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
               </svg>
-              Checking...
+              <span>Checking...</span>
             </span>
           ) : (
-            'Check Status'
+            <span className="flex items-center justify-center space-x-2">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>Check Status</span>
+            </span>
           )}
         </button>
       </form>

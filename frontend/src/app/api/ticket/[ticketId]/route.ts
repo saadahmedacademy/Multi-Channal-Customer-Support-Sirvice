@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { forwardBackendResponse, createErrorResponse } from '@/lib/api-utils';
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8000';
 
@@ -8,7 +9,7 @@ export async function GET(
 ) {
   try {
     const { ticketId } = await params;
-    
+
     if (!ticketId) {
       return NextResponse.json(
         { detail: 'Ticket ID is required' },
@@ -18,26 +19,16 @@ export async function GET(
 
     const response = await fetch(`${BACKEND_URL}/support/ticket/${ticketId}`, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      return NextResponse.json(
-        { detail: errorData.detail || 'Ticket not found' },
-        { status: response.status }
-      );
+      return forwardBackendResponse(response, 'Ticket not found');
     }
 
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {
-    console.error('Error fetching ticket status:', error);
-    return NextResponse.json(
-      { detail: 'Internal server error' },
-      { status: 500 }
-    );
+    return createErrorResponse(error, 'Error fetching ticket status');
   }
 }
