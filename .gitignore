@@ -67,6 +67,9 @@ logs
 .DS_Store
 Thumbs.db
 
+# Generated coverage report
+coverage.xml
+
 # Testing
 coverage/
 .nyc_output/
@@ -87,6 +90,17 @@ credentials.json
 # Redpanda/Kafka data
 redpanda_data/
 kafka_data/
+
+# Session/report artifacts
+reports/
+history/
+
+# Binary downloads
+*.tgz
+*.tar.gz
+
+# Generated logs
+.opencode/git-action-log.md
 
 # Temporary files
 tmp/

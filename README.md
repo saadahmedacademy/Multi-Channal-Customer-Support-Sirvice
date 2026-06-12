@@ -7,172 +7,108 @@ sdk: docker
 pinned: false
 ---
 
-# AI Customer Support Agent (Digital FTE)
+# AI Customer Support Agent
 
-A lightweight, multi-channel AI customer support agent that receives customer messages via web form and WhatsApp, processes them asynchronously through a queue, generates AI-powered responses, and maintains conversation history across channels.
+Multi-channel AI-powered customer support system with web form, WhatsApp, and email channels. Backend deployed on Hugging Face Spaces, frontend on Vercel.
 
-## Features
+## Architecture
 
-- 🌐 **Web Support Form**: Customers can submit support requests via a Next.js web form
-- 💬 **WhatsApp Integration**: Meta WhatsApp Cloud API for messaging support
-- 🤖 **AI-Powered Responses**: OpenRouter/Gemini AI for intelligent response generation
-- 🔄 **Cross-Channel Continuity**: Unified conversation history across channels
-- ⚡ **Async Processing**: Redpanda queue for reliable message processing
-- 📊 **Ticket Tracking**: Unique ticket IDs with status tracking
-- 🎯 **Smart Escalation**: Automatic escalation for pricing, refund, and legal queries
+```
+User → Web Form / WhatsApp / Email → FastAPI → Async Queue → AI Agent → Response
+                                              ↕
+                                         PostgreSQL
+                                       (Supabase)
+```
 
-## Tech Stack
-
-**Backend**:
-- Python 3.11+ with FastAPI
-- Redpanda (lightweight Kafka alternative)
-- Supabase PostgreSQL with pgvector
-- OpenRouter/Gemini AI APIs
-
-**Frontend**:
-- Next.js 14 with App Router
-- React 18
-- TypeScript
-
-**Infrastructure**:
-- Single-node deployment (4GB RAM optimized)
-- Docker Compose for local development
+- **Backend**: Python FastAPI with async message processing
+- **Frontend**: Next.js 16 with App Router (Vercel)
+- **Database**: Supabase PostgreSQL
+- **AI**: OpenRouter (primary) → Hugging Face Inference (fallback)
+- **Queue**: In-process async queue (HF Spaces) / Redpanda (local dev)
+- **Email**: Gmail API with OAuth 2.0 + label-based sync
+- **WhatsApp**: Meta Cloud API webhook
 
 ## Quick Start
 
-### Prerequisites
-
-- Python 3.11+
-- Node.js 18+
-- Docker (for Redpanda)
-- Supabase account (free tier)
-- OpenRouter API key
-
-### 1. Clone and Setup
-
 ```bash
-cd /home/saadahmed/hk-5
+git clone <repo>
+cd hk-5
 
-# Create Python virtual environment
+# Backend
 python -m venv .venv
 source .venv/bin/activate
-
-# Install Python dependencies
 pip install -r backend/requirements.txt
 
-# Install Node.js dependencies
-cd frontend
-npm install
-cd ..
+# Frontend
+cd frontend && npm install && cd ..
+
+# Configure
+cp .env.example .env   # Fill in your API keys
+
+# Start backend
+cd backend && uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
+
+# Start frontend (another terminal)
+cd frontend && npm run dev
 ```
-
-### 2. Environment Configuration
-
-```bash
-cp .env.example .env
-# Edit .env with your API keys
-```
-
-### 3. Start Redpanda
-
-```bash
-docker run -d --name redpanda \
-  -p 9092:9092 \
-  docker.redpanda.com/redpandadata/redpanda:latest \
-  redpanda start --smp 1 --memory 512M --overprovisioned
-```
-
-### 4. Setup Database
-
-```bash
-psql $DATABASE_URL -f database/schema.sql
-```
-
-### 5. Start Backend
-
-```bash
-cd backend
-uvicorn api.main:app --reload --host 0.0.0.0 --port 8000
-```
-
-### 6. Start Worker
-
-```bash
-python backend/worker/message_processor.py
-```
-
-### 7. Start Frontend
-
-```bash
-cd frontend
-npm run dev
-```
-
-Visit http://localhost:3000 to access the support form.
 
 ## Project Structure
 
 ```
-project/
 ├── backend/
-│   ├── api/              # FastAPI routes and schemas
-│   ├── worker/           # Message processor and AI agent
-│   ├── integrations/     # WhatsApp, queue clients
-│   ├── db/               # Database models and repositories
-│   └── config/           # Configuration and logging
+│   ├── api/              # FastAPI routes & schemas
+│   ├── worker/           # Message processor & AI agent
+│   ├── integrations/     # Gmail, WhatsApp, queue clients
+│   ├── db/               # Database models & repositories
+│   └── config/           # Settings & logging
 ├── frontend/
-│   ├── app/              # Next.js pages and API routes
-│   ├── components/       # React components
-│   └── styles/           # CSS styles
-├── context/              # Knowledge base and escalation rules
-├── database/             # SQL schema and migrations
-└── tests/                # Test suites
-```
-
-## API Endpoints
-
-- `POST /support/submit` - Submit support request (web form)
-- `GET /support/ticket/{id}` - Check ticket status
-- `POST /webhooks/whatsapp` - WhatsApp webhook (Meta)
-- `GET /health` - Health check
-- `GET /metrics/channels` - Channel metrics
-
-## Development
-
-### Running Tests
-
-```bash
-# Backend tests
-cd backend
-pytest
-
-# Frontend tests
-cd frontend
-npm test
-```
-
-### Code Style
-
-```bash
-# Backend lint
-cd backend
-flake8 .
-black .
-isort .
-
-# Frontend lint
-cd frontend
-npm run lint
+│   ├── src/app/          # Next.js pages & API routes
+│   ├── src/components/   # React components
+│   └── src/lib/          # Shared utilities
+├── database/             # SQL schema & Alembic migrations
+├── context/              # Knowledge base & escalation rules
+├── tests/                # Backend test suite
+├── scripts/              # Utility scripts
+└── docs/                 # Documentation
 ```
 
 ## Deployment
 
-See `docs/deployment.md` for production deployment guide.
+- **Backend**: Auto-deployed to Hugging Face Spaces via GitHub Actions (`sync-to-hub.yml`)
+- **Frontend**: Auto-deployed to Vercel from `frontend/` directory
+- **HF Space**: `saadi786/ai-customer-support` — single Docker container with in-process queue
+
+## Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `DATABASE_URL` | Yes | Supabase PostgreSQL connection string |
+| `OPENROUTER_API_KEY` | Yes | OpenRouter API key for AI |
+| `HUGGINGFACE_API_KEY` | No | Fallback AI when OpenRouter is rate-limited |
+| `GMAIL_CLIENT_ID` | For email | Google OAuth client ID |
+| `GMAIL_CLIENT_SECRET` | For email | Google OAuth client secret |
+| `GMAIL_REFRESH_TOKEN` | For email | OAuth refresh token |
+| `GMAIL_OAUTH_TOKEN` | For email | OAuth access token |
+| `SUPPORT_EMAIL` | For email | Gmail address for support |
+| `GMAIL_SYNC_LABEL` | For email | Gmail label for filtering support emails |
+| `META_WHATSAPP_TOKEN` | For WhatsApp | Meta Cloud API access token |
+| `QUEUE_MODE` | No | `local` (in-process) or `kafka` (Redpanda) |
+
+## API Endpoints
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/health` | Health check |
+| POST | `/support/submit` | Submit support request (web form) |
+| GET | `/support/ticket/{id}` | Get ticket status & conversation |
+| POST | `/webhooks/whatsapp` | WhatsApp webhook |
+| POST | `/customers/link-identifiers` | Link customer identifiers across channels |
+| GET | `/metrics/channels` | Channel usage metrics |
+
+## Email Sync
+
+Emails are synced every 30s (configurable via `EMAIL_SYNC_INTERVAL`). Only emails with the configured Gmail label (`GMAIL_SYNC_LABEL`, default: `SupportTicket`) are processed. Set `DISABLE_EMAIL_SYNC=1` to disable.
 
 ## License
 
 MIT
-
-## Support
-
-For issues or questions, please use the support form at http://localhost:3000

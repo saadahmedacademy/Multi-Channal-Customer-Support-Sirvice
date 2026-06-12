@@ -48,3 +48,12 @@ log_cli_date_format = "%Y-%m-%d %H:%M:%S"
 # JUnit XML for CI/CD
 junit_family = "xunit2"
 junit_logging = "all"
+
+[tool.coverage.run]
+omit = [
+    "*/migrations/*",
+    "*/tests/*",
+    "*/venv/*",
+    "*/__pycache__/*",
+]
+source = ["backend"]
