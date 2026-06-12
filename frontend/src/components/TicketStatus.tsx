@@ -40,13 +40,13 @@ export default function TicketStatus() {
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [ticketData, setTicketData] = useState<TicketStatusData | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [showCopyNotification, setShowCopyNotification] = useState(false);
+  const [copyNotification, setCopyNotification] = useState<{show: boolean; text: string}>({show: false, text: ''});
 
-  const copyToClipboard = async (text: string) => {
+  const copyToClipboard = async (text: string, label: string = 'Copied!') => {
     try {
       await navigator.clipboard.writeText(text);
-      setShowCopyNotification(true);
-      setTimeout(() => setShowCopyNotification(false), 3000);
+      setCopyNotification({show: true, text: label});
+      setTimeout(() => setCopyNotification({show: false, text: ''}), 2000);
     } catch (err) {
       console.error('Failed to copy:', err);
     }
@@ -93,13 +93,13 @@ export default function TicketStatus() {
     return (
       <div className="w-full max-w-4xl mx-auto p-6 bg-white dark:bg-gray-800 rounded-lg shadow-md relative">
         {/* Copy Notification Toast */}
-        {showCopyNotification && (
-          <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-50 animate-fade-in-down">
-            <div className="bg-green-500 dark:bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg flex items-center space-x-2">
+        {copyNotification.show && (
+          <div className="fixed top-6 left-1/2 transform -translate-x-1/2 z-50 animate-fade-in-down">
+            <div className="bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center space-x-2">
               <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
               </svg>
-              <span className="font-medium">Ticket ID copied!</span>
+              <span className="font-medium">{copyNotification.text}</span>
             </div>
           </div>
         )}
@@ -111,7 +111,7 @@ export default function TicketStatus() {
                 Ticket: {ticketData.ticket_id}
               </h2>
               <button
-                onClick={() => copyToClipboard(ticketData.ticket_id)}
+                onClick={() => copyToClipboard(ticketData.ticket_id, 'Ticket ID copied!')}
                 className="p-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
                 title="Copy to clipboard"
               >
@@ -186,7 +186,7 @@ export default function TicketStatus() {
                         {new Date(message.created_at).toLocaleTimeString()}
                       </span>
                       <button
-                        onClick={() => copyToClipboard(message.content)}
+                        onClick={() => copyToClipboard(message.content, 'Copied!')}
                         className={`p-1 rounded transition-colors ${
                           message.role === 'customer'
                             ? 'hover:bg-blue-500 text-blue-100'
