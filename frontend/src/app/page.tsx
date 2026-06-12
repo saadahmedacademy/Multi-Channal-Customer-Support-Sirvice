@@ -254,13 +254,13 @@ export default function Home() {
                 <h3 className="text-lg font-bold text-gray-900 dark:text-white">Contact Us</h3>
               </div>
               <div className="space-y-3">
-                <a href="mailto:saadqurashiazeemqurashi@gmail.com" className="flex items-center text-sm text-gray-700 dark:text-gray-200 p-3 rounded-lg hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 dark:hover:from-indigo-900/20 dark:hover:to-purple-900/20 transition-all group/item">
+                <a href="mailto:lasanitech7@gmail.com" className="flex items-center text-sm text-gray-700 dark:text-gray-200 p-3 rounded-lg hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50 dark:hover:from-indigo-900/20 dark:hover:to-purple-900/20 transition-all group/item">
                   <div className="p-2 bg-gradient-to-br from-indigo-100 to-purple-100 dark:from-indigo-900/50 dark:to-purple-900/50 rounded-lg mr-3 group-hover/item:scale-110 transition-transform">
                     <svg className="w-4 h-4 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                     </svg>
                   </div>
-                  <span className="font-medium">saadqurashiazeemqurashi@gmail.com</span>
+                  <span className="font-medium">lasanitech7@gmail.com</span>
                 </a>
                 <a href="https://wa.me/1234567890" className="flex items-center text-sm text-gray-700 dark:text-gray-200 p-3 rounded-lg hover:bg-gradient-to-r hover:from-green-50 hover:to-emerald-50 dark:hover:from-green-900/20 dark:hover:to-emerald-900/20 transition-all group/item">
                   <div className="p-2 bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-900/50 dark:to-emerald-900/50 rounded-lg mr-3 group-hover/item:scale-110 transition-transform">

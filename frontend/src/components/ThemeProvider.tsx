@@ -51,7 +51,9 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   }, [theme, mounted]);
 
   const toggleTheme = () => {
+    document.documentElement.classList.add('theme-changing');
     setTheme(prevTheme => prevTheme === 'light' ? 'dark' : 'light');
+    setTimeout(() => document.documentElement.classList.remove('theme-changing'), 200);
   };
 
   return (
