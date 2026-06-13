@@ -1,167 +1,200 @@
 ---
-description: Scan project structure and maintain a token-efficient context file at .opencode/context.md. Run once per session to restore full project awareness without re-reading the entire codebase.
+description: Maintain a layered, token-efficient project context at .opencode/context.md and session state at .opencode/state.md. Uses pyramid disclosure — ultra-condensed TL;DR at top, details below. Separates static project structure from dynamic session state for minimal re-read cost.
+handoffs:
+  - label: Refresh State
+    agent: sp.context
+    prompt: Update current session state
+    send: false
 ---
 
 ## Goal
 
-Generate and maintain `.opencode/context.md` — a compact (~150 lines), high-signal project snapshot that lets future sessions bootstrap full context in seconds instead of re-scanning the entire repo.
+Maintain **two files** that together give a new session full project awareness in 1-2 reads (~200 tokens for TL;DR, ~2K tokens for full):
 
-The file is append-only: each run prepends a timestamped snapshot and keeps the previous one (max 3). Old entries are pruned.
+| File | Content | Changes | Purpose |
+|------|---------|---------|---------|
+| `.opencode/context.md` | Architecture, stack, conventions, key files, deploy targets | Rare (project structure) | Bootstraps project awareness |
+| `.opencode/state.md` | Current work, decisions, blockers, recent changes | Every session | Tracks what's in progress |
+
+## Core Principles (from 2026 Context Engineering Research)
+
+### Pyramid Disclosure
+The file is structured as nested layers of detail. The top **must** be a TL;DR that fully identifies the project in 3-5 lines — agents can stop there for 80% of queries and only drill down when needed.
+
+### Cache-Friendly Layout
+Stable sections at the top (architecture, stack, conventions), dynamic sections at the bottom (commits, active work). This mimics Anthropic prompt caching — the stable prefix stays identical across reads, enabling provider-side KV cache reuse.
+
+### Navigation Heuristics Over Exhaustive Lists
+Instead of enumerating every API route and env var, teach the agent *how* to find them. A 2-line navigation pattern replaces a 30-line table. The agent explores just-in-time using tools, keeping context lean.
+
+### Write State, Don't Carry It
+Session state (current task, decisions, blockers) lives in `.opencode/state.md`, not in the agent's context window. The agent writes progress there and reads it back after context resets. This is Anthropic's "structured note-taking" pattern.
 
 ## Execution Steps
 
-### 1. Initialize
+### Phase 1: Detect Changes (30s)
 
-Determine project root (`.` from command invocation). Verify these exist:
-- `backend/api/main.py` — FastAPI entry point
-- `frontend/src/app/layout.tsx` — Next.js root layout
-- `docker-compose.yml` or `Dockerfile` — container config
+Run `git diff --name-only HEAD~1..HEAD` to list files changed since last commit.
 
-### 2. Scan Project Structure (Read Commands — 1 batch)
+- If **only** `.opencode/context.md` or `.opencode/state.md` changed — skip regeneration, just update state (jump to Phase 4).
+- If project structure files changed (routes, deps, config, new dirs) — proceed to Phase 2.
+- If no context files exist yet or `git` fails — proceed to Phase 2 (full scan).
 
-Run these reads in a **single parallel batch** (minimize round trips):
+### Phase 2: Scan (Single Parallel Batch)
 
-**Backend:**
-- `backend/api/main.py` — registered routes, routers, middleware
-- `backend/api/routes/` — list directory, note each file
-- `backend/config/settings.py` — env vars, defaults, secrets
-- `backend/db/connection.py` — DB type, pool config
-- `backend/db/repositories/` — list directory
-- `backend/integrations/` — list directory (email_client, queue_client, whatsapp_client)
-- `backend/worker/` — list directory (message_processor, ai_agent)
-- `backend/hf_main.py` — HF Spaces entry point (if exists)
-- `pyproject.toml` — test config, lint config, deps
+Read all of these in **one** parallel call:
 
-**Frontend:**
-- `frontend/src/app/` — list directory (pages, API routes)
-- `frontend/package.json` — scripts, key dependencies
-- `frontend/next.config.ts` — build config
+**Root markers (3 files):**
+- `README.md` — project name, description, badges
+- `pyproject.toml` — test config, lint config, Python deps
+- `package.json` (root, if exists) — workspace scripts
 
-**Infra:**
-- `Dockerfile` — container build steps
-- `.github/workflows/` — list CI/CD files
-- `docker-compose.yml` — service topology
+**Backend skeleton:**
+- `backend/api/main.py` — registered route prefixes + middleware list (just first 20 lines + router includes)
+- `ls backend/api/routes/` — file names only
+- `ls backend/db/repositories/` — file names only
+- `ls backend/integrations/` — file names only
+- `ls backend/worker/` — file names only
+- `ls backend/api/middleware/` — file names only
+- `backend/config/settings.py` — extract `Field(...)` lines via `rg Field\(` or grep
 
-### 3. Extract Env Vars (from settings.py)
+**Frontend skeleton:**
+- `ls frontend/src/app/` — subdirectory names only
+- `frontend/package.json` — name, scripts, key deps (tailwind, next, react)
 
-Scan `settings.py` for `Field(...)` lines and note:
-- Variable names + defaults
-- Secrets (mark `SECRET`, `API_KEY`, `PASSWORD`, `TOKEN` — mask values)
-- Required vs optional
+**Infra skeleton:**
+- `ls .github/workflows/` — file names only
+- `Dockerfile` — first 5 lines (base image + entry point)
+- `docker-compose.yml` — service names only (first 10 lines)
 
-### 4. Discover API Routes
+**State (if exists):**
+- `.opencode/state.md` — read existing state
 
-Scan each file in `backend/api/routes/` for:
-- `@router.*.get/post/put/patch/delete` — method + path
-- `router.include_router` in `main.py`
+### Phase 3: Build/Update `.opencode/context.md`
 
-Produce a compact route table.
-
-### 5. Discover Frontend Pages
-
-Scan each file/dir in `frontend/src/app/`:
-- `page.tsx` = page route
-- `route.ts` = API route
-- `layout.tsx` = layout wrapper
-
-### 6. Detect Conventions
-
-From `pyproject.toml`:
-- Linter (ruff/flake8/black)
-- Formatter
-- Test framework + runner
-
-From `frontend/package.json`:
-- Build tool + test tool
-- CSS framework (Tailwind, CSS modules)
-
-From commit history (last 5 commits — `git log --oneline -5`):
-- Commit style, branch naming
-
-### 7. Build Context File
-
-Generate `.opencode/context.md` with this structure (keep under 200 lines total):
+Generate the file using this **pyramid structure**. Start with the TL;DR, then add progressive detail.
 
 ```markdown
-# Project Context — <project-name>
+# <project-name>
 
-Scanned: <datetime>
+> <one-line description> · Backend: <tech> · Frontend: <tech> · DB: <db> · AI: <provider chain>
+
+Scanned: <YYYY-MM-DD>
 
 ## Architecture
-<2-3 line summary of how backend + frontend + worker connect>
+<2-3 line system diagram in prose>
 
 ## Stack
-| Layer | Tech | Version/Notes |
-|-------|------|--------------|
-| Backend | Python + FastAPI | ... |
-| Frontend | Next.js + Tailwind | ... |
-| Database | PostgreSQL | ... |
-| Queue | Redpanda / local | ... |
-| AI | OpenRouter → HF → Gemini | ... |
-| Email | Gmail API (OAuth) | ... |
+| Layer | Tech |
+|-------|------|
+| Backend | Python X.Y + FastAPI |
+| Frontend | Next.js X + React X + Tailwind CSS X |
+| Database | PostgreSQL (asyncpg pool X-Y) |
+| Queue | Redpanda / local in-process fallback |
+| AI | <fallback chain> |
+| Email | Gmail API (OAuth2) |
+| WhatsApp | Meta Cloud API |
 
 ## Key Files
-| Path | Purpose |
-|------|---------|
-| backend/api/main.py | FastAPI app, lifespan, middleware |
-| ... | ... |
+| Path | Role |
+|------|------|
+| backend/api/main.py | FastAPI app + lifespan + middleware |
+| backend/api/routes/ | 9 route modules — <list names> |
+| backend/config/settings.py | Pydantic settings (X env vars) |
+| backend/db/connection.py | asyncpg pool manager |
+| backend/db/repositories/ | X repos — <list names> |
+| backend/integrations/ | <list names> |
+| backend/worker/ | <list names> |
+| backend/hf_main.py | HF Spaces unified entry (app + worker + email sync) |
+| frontend/src/app/ | Next.js App Router (X pages, X API routes) |
+| .github/workflows/ | <list names> |
 
-## API Routes
-| Method | Path | Description |
-|--------|------|-------------|
-| POST | /support/submit | Web form submission |
-| GET | /support/ticket/{id} | Ticket status |
-| ... | ... | ... |
-
-## Frontend Pages
-| Route | Type | Description |
-|-------|------|-------------|
-| / | page | Support form |
-| /ticket/[id] | page | Ticket status lookup |
-| ... | ... | ... |
-
-## Environment Variables
-| Var | Default | Secret? | Required? |
-|-----|---------|---------|-----------|
-| DATABASE_URL | postgresql://... | yes | yes |
-| ... | ... | ... | ... |
+## Navigation Patterns
+- **API routes**: Read `backend/api/routes/<name>.py` — each file contains its own route group with `@router.get/post/...` annotations.
+- **Env vars**: Search for `Field(...)` in `backend/config/settings.py` — each field is one env var with default and type.
+- **DB schema**: See `database/schema.sql` for full DDL, or `backend/db/repositories/` for query patterns.
+- **Frontend pages**: Each dir under `frontend/src/app/` is a route; `page.tsx` = page, `route.ts` = API, `layout.tsx` = layout.
+- **Conventions**: Linter=<lint>, Formatter=<fmt>, Test=<test-cmd>, CSS=<css-framework>, Commit=<commit-style>.
 
 ## Conventions
-- Linter: ruff
-- Formatter: black
-- Test: pytest (async)
-- Commit style: conventional-commits
-- Branch: feature/ → main
+- <lint> · <fmt> · <test runner> · <CSS> · <commit style>
+- <notable patterns: raw SQL vs ORM, sanitization, error handling style>
 
 ## Deploy Targets
 | Target | URL |
 |--------|-----|
-| HF Spaces | https://saadi786-ai-customer-support.hf.space |
-| Vercel | https://multi-channal-customer-support-sirv.vercel.app |
+| HF Spaces | <url> |
+| Vercel | <url> |
 ```
 
-### 8. Prune Old Snapshots
+### Phase 4: Update `.opencode/state.md`
 
-If file already exists with 3+ timestamps, keep only the 2 most recent + the new one. Remove older blocks.
+Merge existing state (if any) with new session state. The file structure:
 
-### 9. Report Summary
+```markdown
+# Session State — <YYYY-MM-DD>
 
-Print:
+## Current Task
+<what is being worked on right now — 1 line>
+
+## Active Decisions
+- <decision 1>
+- <decision 2>
+
+## Blockers
+- <blocker 1> — <why blocked>
+
+## Recent Changes
+- <last 5 changed files with brief description>
+
+## Next Steps
+1. <step 1>
+2. <step 2>
 ```
-Context updated → .opencode/context.md (XX lines, scanned YY files)
+
+**Merge behavior:**
+- If `Current Task` is empty from prior session, wipe it.
+- If `Active Decisions` exist from prior session, keep them and append new ones.
+- If `Blockers` are resolved, remove them.
+- If `Recent Changes` exceed 5, keep only the 5 most recent.
+- If `Next Steps` exist, keep them and add new ones below (don't overwrite).
+
+### Phase 5: Prune
+
+- `.opencode/context.md`: Keep only the **current** snapshot (replace, don't append). Project structure rarely changes — no need for history.
+- `.opencode/state.md`: Keep the 3 most recent session entries. Prune older ones.
+
+### Phase 6: Report
+
+```
+Context:  .opencode/context.md (XX lines, scanned YY files)
+State:   .opencode/state.md (XX lines, ZZ active items)
 ```
 
-## Loading Context in Future Sessions
+## How to Load Context in a Session
 
-If `.opencode/context.md` exists at session start, the agent should:
-1. Read it first (1 read → full project awareness)
-2. Only re-scan files when context is stale or user asks about something not covered
-3. Run this command again if project structure has changed significantly
+When a session starts and `.opencode/context.md` exists:
 
-## Operating Principles
+1. **Read the first 5 lines** (title + TL;DR + architecture) — this covers 80% of queries.
+2. If you need specifics (routes, env vars, file paths), **read the relevant section** using the navigation patterns in the file — don't load the whole thing unless necessary.
+3. **Read `.opencode/state.md`** to understand what's in progress.
+4. **Don't re-scan the repo** unless context.md is clearly stale (missing a known file) or the task requires probing deeper than what context.md describes.
+5. If the project has changed structurally since the last scan, **run `/sp.context`** to regenerate.
 
-- **Token efficiency**: Each line must pull its weight. No verbose dumps.
-- **Append-only**: Never mutate past snapshots — only add new ones and prune oldest.
-- **Discover, don't guess**: Extract from actual files, never hallucinate structure.
-- **Speed**: Complete in 3-4 tool round trips (1 batch read, 1 write, optional git command).
-- **No persistence side effects**: Only writes `.opencode/context.md`. Never modifies source code, config, or database.
+## Token Budget
+
+| Layer | Lines | Tokens (est.) | What |
+|-------|-------|---------------|------|
+| 1 — TL;DR | 3-5 | ~60 | Project name + one-liner + architecture |
+| 2 — Key refs | 20-40 | ~500 | Stack table, key files, navigation patterns |
+| 3 — Details | 30-60 | ~800 | Conventions, deploy targets |
+
+**Total target**: Under 100 lines / ~1,500 tokens for context.md. Under 40 lines / ~600 tokens for state.md.
+
+## Anti-Patterns (Don't)
+
+- ❌ **Dumping full route tables** — navigation patterns are more token-efficient and stay valid as routes change.
+- ❌ **Regenerating from scratch each time** — use `git diff` to detect real changes; skip if nothing changed.
+- ❌ **Appending full snapshots** — replace context.md (static structure), append to state.md (dynamic).
+- ❌ **Including tool outputs or raw config values** — pointers and summaries only.
+- ❌ **Letting state.md grow unbounded** — prune to 3 sessions max.
