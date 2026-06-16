@@ -27,6 +27,12 @@ class Channel(str, Enum):
     EMAIL = "email"
 
 
+class FeedbackRating(str, Enum):
+    """Message feedback rating."""
+    THUMBS_UP = "thumbs_up"
+    THUMBS_DOWN = "thumbs_down"
+
+
 class DeliveryStatus(str, Enum):
     """Message delivery status."""
     PENDING = "pending"
@@ -47,6 +53,9 @@ class MessageSchema(BaseModel):
     tokens_used: Optional[int] = Field(None, description="AI tokens used (for outbound)")
     latency_ms: Optional[int] = Field(None, description="Processing time in ms")
     delivery_status: DeliveryStatus = Field(..., description="Delivery status")
+    feedback: Optional[FeedbackRating] = Field(None, description="Thumbs up/down feedback")
+    feedback_reason: Optional[str] = Field(None, description="Optional reason for thumbs down")
+    feedback_created_at: Optional[datetime] = Field(None, description="When feedback was given")
 
     class Config:
         json_schema_extra = {
@@ -106,6 +115,43 @@ class MessageCreate(BaseModel):
                 "content": "I need help with API authentication"
             }
         }
+
+
+class FeedbackSubmit(BaseModel):
+    """Request schema for submitting message feedback."""
+    rating: FeedbackRating = Field(..., description="Thumbs up or down")
+    reason: Optional[str] = Field(None, max_length=500, description="Optional reason for thumbs down")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "rating": "thumbs_up",
+                "reason": None
+            }
+        }
+
+
+class FollowUpMessage(BaseModel):
+    """Request schema for follow-up message in existing conversation."""
+    conversation_id: str = Field(..., description="Parent conversation ID")
+    content: str = Field(..., min_length=1, max_length=10000, description="Message content")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "conversation_id": "conv-001",
+                "content": "Can you provide more details about the API setup?"
+            }
+        }
+
+
+class FollowUpResponse(BaseModel):
+    """Response schema for follow-up message."""
+    message_id: str = Field(..., description="New message ID")
+    response_message_id: str = Field(..., description="AI response message ID")
+    response: str = Field(..., description="AI response content")
+    tokens_used: int = Field(..., description="AI tokens consumed")
+    created_at: datetime = Field(..., description="When the response was created")
 
 
 class AIResponseRequest(BaseModel):

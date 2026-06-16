@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { copyToClipboard, fallbackCopy } from '@/lib/clipboard';
 import { useToast } from '@/lib/toast';
 
@@ -9,10 +9,13 @@ interface Message {
   role: 'customer' | 'agent' | 'system';
   content: string;
   created_at: string;
+  feedback?: 'thumbs_up' | 'thumbs_down' | null;
+  feedback_reason?: string | null;
 }
 
 interface TicketStatusData {
   ticket_id: string;
+  conversation_id?: string;
   status: 'open' | 'in_progress' | 'resolved' | 'escalated' | 'closed';
   category: string;
   priority: 'low' | 'medium' | 'high' | 'critical';
@@ -44,7 +47,24 @@ export default function TicketStatus() {
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [ticketData, setTicketData] = useState<TicketStatusData | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [newMessage, setNewMessage] = useState('');
+  const [sending, setSending] = useState(false);
+  const [feedbackLoading, setFeedbackLoading] = useState<Record<string, boolean>>({});
+  const [thumbsDownReason, setThumbsDownReason] = useState<Record<string, string>>({});
+  const [thumbsDownOpen, setThumbsDownOpen] = useState<Record<string, boolean>>({});
   const { showToast } = useToast();
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (status === 'success') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [status]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [ticketData?.messages]);
 
   const handleCopy = async (text: string, label: string = 'Copied!') => {
     const ok = await copyToClipboard(text);
@@ -82,11 +102,99 @@ export default function TicketStatus() {
     }
   };
 
-  useEffect(() => {
-    if (status === 'success') {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+  const handleFeedback = async (messageId: string, rating: 'thumbs_up' | 'thumbs_down', reason?: string) => {
+    if (feedbackLoading[messageId]) return;
+    setFeedbackLoading(prev => ({ ...prev, [messageId]: true }));
+
+    try {
+      const response = await fetch(`/api/messages/${messageId}/feedback`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rating, reason: reason || null }),
+      });
+
+      if (!response.ok) throw new Error('Failed');
+
+      if (rating === 'thumbs_up') {
+        showToast('Thanks for your feedback! 🙏', 'success');
+      }
+
+      setTicketData(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          messages: prev.messages.map(m =>
+            m.id === messageId ? { ...m, feedback: rating, feedback_reason: reason || null } : m
+          )
+        };
+      });
+    } catch {
+      showToast('Failed to submit feedback', 'error');
+    } finally {
+      setFeedbackLoading(prev => ({ ...prev, [messageId]: false }));
     }
-  }, [status]);
+  };
+
+  const handleSendMessage = async () => {
+    const content = newMessage.trim();
+    if (!content || sending || !ticketData?.conversation_id) return;
+
+    setSending(true);
+    const tempId = `temp-${Date.now()}`;
+
+    setTicketData(prev => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        messages: [...prev.messages, {
+          id: tempId,
+          role: 'customer' as const,
+          content,
+          created_at: new Date().toISOString(),
+        }]
+      };
+    });
+    setNewMessage('');
+
+    try {
+      const response = await fetch(`/api/conversations/${ticketData.conversation_id}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content }),
+      });
+
+      if (!response.ok) throw new Error('Failed to send message');
+
+      const result = await response.json();
+
+      setTicketData(prev => {
+        if (!prev) return prev;
+        const msgs = prev.messages.filter(m => m.id !== tempId);
+        return {
+          ...prev,
+          messages: [...msgs, {
+            id: result.response_message_id,
+            role: 'agent' as const,
+            content: result.response,
+            created_at: result.created_at,
+          }]
+        };
+      });
+    } catch {
+      showToast('Failed to send message. Please try again.', 'error');
+      setTicketData(prev => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          messages: prev.messages.map(m =>
+            m.id === tempId ? { ...m, content: `${content}\n\n[Failed to send]` } : m
+          )
+        };
+      });
+    } finally {
+      setSending(false);
+    }
+  };
 
   const formatDateTime = (dateString: string) => {
     return new Date(dateString).toLocaleString('en-US', {
@@ -156,53 +264,157 @@ export default function TicketStatus() {
 
         <div className="border-t dark:border-gray-700 pt-6">
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">Conversation</h3>
-          <div className="space-y-4">
+          <div className="space-y-4 mb-4">
             {ticketData.messages.map((message) => (
-              <div
-                key={message.id}
-                className={`flex ${message.role === 'customer' ? 'justify-end' : 'justify-start'}`}
-              >
+              <div key={message.id}>
                 <div
-                  className={`max-w-[80%] rounded-lg p-4 ${
-                    message.role === 'customer'
-                      ? 'bg-blue-600 text-white'
-                      : message.role === 'system'
-                      ? 'bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-200'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
-                  }`}
+                  className={`flex ${message.role === 'customer' ? 'justify-end' : 'justify-start'}`}
                 >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className={`text-xs font-medium ${
-                      message.role === 'customer' ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'
-                    }`}>
-                      {message.role === 'customer' ? 'You' : message.role === 'agent' ? 'Support Agent' : 'System'}
-                    </span>
-                    <span className="flex items-center space-x-2">
-                      <span className={`text-xs ${
-                        message.role === 'customer' ? 'text-blue-100' : 'text-gray-400 dark:text-gray-500'
+                  <div
+                    className={`max-w-[80%] rounded-lg p-4 ${
+                      message.role === 'customer'
+                        ? 'bg-blue-600 text-white'
+                        : message.role === 'system'
+                        ? 'bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 text-yellow-800 dark:text-yellow-200'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className={`text-xs font-medium ${
+                        message.role === 'customer' ? 'text-blue-100' : 'text-gray-500 dark:text-gray-400'
                       }`}>
-                        {new Date(message.created_at).toLocaleTimeString()}
+                        {message.role === 'customer' ? 'You' : message.role === 'agent' ? 'Support Agent' : 'System'}
                       </span>
-                      <button
-                        onClick={() => handleCopy(message.content, 'Copied!')}
-                        className={`p-1 rounded transition-colors ${
-                          message.role === 'customer'
-                            ? 'hover:bg-blue-500 text-blue-100'
-                            : 'hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-400 dark:text-gray-500'
-                        }`}
-                        title="Copy message"
-                      >
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                        </svg>
-                      </button>
-                    </span>
+                      <span className="flex items-center space-x-2">
+                        <span className={`text-xs ${
+                          message.role === 'customer' ? 'text-blue-100' : 'text-gray-400 dark:text-gray-500'
+                        }`}>
+                          {new Date(message.created_at).toLocaleTimeString()}
+                        </span>
+                        <button
+                          onClick={() => handleCopy(message.content, 'Copied!')}
+                          className={`p-1 rounded transition-colors ${
+                            message.role === 'customer'
+                              ? 'hover:bg-blue-500 text-blue-100'
+                              : 'hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-400 dark:text-gray-500'
+                          }`}
+                          title="Copy message"
+                        >
+                          <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                          </svg>
+                        </button>
+                      </span>
+                    </div>
+                    <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+
+                    {message.role === 'agent' && (
+                      <div className="mt-3 flex items-center space-x-2 pt-2 border-t border-gray-200 dark:border-gray-600">
+                        {message.feedback ? (
+                          <span className="text-xs text-gray-400 dark:text-gray-500">
+                            {message.feedback === 'thumbs_up' ? '👍 Thanks for your feedback!' : '👎 Feedback recorded'}
+                          </span>
+                        ) : (
+                          <>
+                            <button
+                              onClick={() => handleFeedback(message.id, 'thumbs_up')}
+                              disabled={feedbackLoading[message.id]}
+                              className="p-1.5 rounded-full hover:bg-green-100 dark:hover:bg-green-900/30 text-gray-400 hover:text-green-600 transition-colors disabled:opacity-50"
+                              title="Thumbs up"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={() => setThumbsDownOpen(prev => ({ ...prev, [message.id]: !prev[message.id] }))}
+                              disabled={feedbackLoading[message.id]}
+                              className="p-1.5 rounded-full hover:bg-red-100 dark:hover:bg-red-900/30 text-gray-400 hover:text-red-600 transition-colors disabled:opacity-50"
+                              title="Thumbs down"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14H5.236a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.736 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.096c.5 0 .905-.405.905-.904 0-.715.211-1.413.608-2.008L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5" />
+                              </svg>
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    )}
                   </div>
-                  <p className="text-sm whitespace-pre-wrap">{message.content}</p>
                 </div>
+
+                {message.role === 'agent' && thumbsDownOpen[message.id] && !message.feedback && (
+                  <div className="flex justify-start ml-4 mt-2">
+                    <div className="max-w-[80%] bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-3">
+                      <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
+                        What went wrong? Tell us so we can improve.
+                      </p>
+                      <div className="flex space-x-2">
+                        <input
+                          type="text"
+                          value={thumbsDownReason[message.id] || ''}
+                          onChange={(e) => setThumbsDownReason(prev => ({ ...prev, [message.id]: e.target.value }))}
+                          placeholder="Your feedback..."
+                          className="flex-1 px-3 py-1.5 text-sm border border-gray-300 dark:border-gray-500 rounded-lg bg-white dark:bg-gray-600 text-gray-900 dark:text-white focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                          autoFocus
+                        />
+                        <button
+                          onClick={async () => {
+                            await handleFeedback(message.id, 'thumbs_down', thumbsDownReason[message.id] || undefined);
+                            setThumbsDownOpen(prev => ({ ...prev, [message.id]: false }));
+                          }}
+                          disabled={feedbackLoading[message.id]}
+                          className="px-3 py-1.5 bg-gradient-to-r from-red-500 to-pink-600 text-white text-sm rounded-lg hover:from-red-600 hover:to-pink-700 transition-all disabled:opacity-50"
+                        >
+                          Send
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
+            <div ref={messagesEndRef} />
           </div>
+
+          {ticketData.status !== 'closed' && ticketData.status !== 'resolved' ? (
+            <div className="border-t dark:border-gray-700 pt-4">
+              <div className="flex space-x-3">
+                <input
+                  ref={inputRef}
+                  type="text"
+                  value={newMessage}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } }}
+                  placeholder="Type your reply..."
+                  disabled={sending}
+                  className="flex-1 px-4 py-3 border-2 border-gray-200 dark:border-gray-600 bg-white/50 dark:bg-gray-700/50 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all backdrop-blur-sm disabled:opacity-50"
+                />
+                <button
+                  onClick={handleSendMessage}
+                  disabled={!newMessage.trim() || sending}
+                  className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all font-bold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                >
+                  {sending ? (
+                    <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                  ) : (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19V5m0 0l-7 7m7-7l7 7" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="border-t dark:border-gray-700 pt-4">
+              <p className="text-center text-sm text-gray-500 dark:text-gray-400">
+                This ticket is {ticketData.status}. No further messages can be sent.
+              </p>
+            </div>
+          )}
         </div>
 
         <button
@@ -210,6 +422,9 @@ export default function TicketStatus() {
             setStatus('idle');
             setTicketId('');
             setTicketData(null);
+            setNewMessage('');
+            setThumbsDownOpen({});
+            setThumbsDownReason({});
           }}
           className="mt-6 w-full py-3 px-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white rounded-xl hover:from-indigo-700 hover:via-purple-700 hover:to-pink-700 transition-all font-bold"
         >

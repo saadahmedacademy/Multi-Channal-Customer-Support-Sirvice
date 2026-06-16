@@ -1,28 +1,32 @@
-# Session State — 2026-06-13
+# Session State — 2026-06-16
 
 ## Current Task
-Implemented post-resolution survey feature (thumbs up/down) across all channels
+Replaced old survey system with inline per-message feedback + multi-turn chat
 
 ## Active Decisions
-- Separated static context (context.md) from dynamic session state (state.md)
-- Use navigation heuristics instead of exhaustive route/env-var tables
-- State externalization: agents write progress to state.md rather than carrying it in context
-- Gmail env vars in `.env` synced with fresh token.json from new OAuth client
-- Survey uses strict keyword matching (thumbs up/down emoji + text) to avoid false positives
+- **Per-message feedback** instead of ticket-level survey: thumbs up/down stored on individual messages, not a separate table
+- **Multi-turn conversations**: tickets stay `in_progress` after AI response (not auto-resolved); follow-up messages trigger AI with full history
+- **WhatsApp/Email**: feedback prompt appended to response text (emojis), detected on reply → saved to latest agent message
+- **Web frontend**: interactive thumbs up/down buttons + chat input bar for follow-up
+- Thumbs down opens inline input asking "What went wrong?"
 
 ## Blockers
 None
 
 ## Recent Changes
-- `database/schema.sql` — Added `ticket_surveys` table (ticket_id, rating, reason, source)
-- `backend/db/repositories/survey_repo.py` — New repo with save/get_by_ticket methods
-- `backend/api/schemas/tickets.py` — Added SurveyRating, SurveySubmitRequest, SurveyResponse schemas
-- `backend/api/routes/tickets.py` — Added `POST /ticket/{ticket_id}/survey` + survey in GET response
-- `backend/worker/message_processor.py` — After AI resolution, appends survey question; detects survey replies
-- `.env` — Updated `GMAIL_OAUTH_TOKEN` and `GMAIL_REFRESH_TOKEN` to match new OAuth client
+- `database/schema.sql` — Removed `ticket_surveys` table
+- `database/migrations/004_add_message_feedback.sql` — New migration: add feedback columns to messages
+- `backend/db/repositories/message_repo.py` — New repo: get_by_conversation, set_feedback, get_latest_agent_message
+- `backend/api/schemas/messages.py` — Added FeedbackRating, FeedbackSubmit, FollowUpMessage, FollowUpResponse; added feedback fields to MessageSchema
+- `backend/api/schemas/tickets.py` — Removed old SurveyRating, SurveySubmitRequest, SurveyResponse
+- `backend/api/routes/tickets.py` — Removed POST /ticket/{ticket_id}/survey; uses message_repo
+- `backend/api/routes/conversations.py` — Added POST /{id}/messages (follow-up) + POST /messages/{id}/feedback
+- `backend/worker/message_processor.py` — No auto-resolve; feedback saves to last agent message; multi-turn support
+- `frontend/src/components/TicketStatus.tsx` — Full rewrite: chat bubbles with 👍/👎 buttons, input bar, thumbs-down reason input
+- `frontend/src/app/api/conversations/[id]/messages/route.ts` — New frontend API proxy
+- `frontend/src/app/api/messages/[messageId]/feedback/route.ts` — New frontend API proxy
 
 ## Next Steps
-1. Copy updated Gmail env vars from `.env` into HF Spaces
-2. Run new schema migration on Supabase (CREATE TABLE ticket_surveys)
-3. Test survey flow on all three channels
-4. Run `/sp.context` after future structural changes
+1. Run migration `004_add_message_feedback.sql` on Supabase
+2. Push to deploy
+3. Test multi-turn chat on web + WhatsApp + email
