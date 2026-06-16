@@ -9,6 +9,9 @@ from backend.api.schemas.tickets import (
     TicketCategory,
     TicketPriority,
     TicketStatus,
+    SurveyRating,
+    SurveySubmitRequest,
+    SurveyResponse,
     ErrorResponse
 )
 from backend.api.schemas.messages import (
@@ -20,6 +23,7 @@ from backend.api.schemas.messages import (
 )
 from backend.db.repositories.ticket_repo import ticket_repo
 from backend.db.repositories.conversation_repo import conversation_repo
+from backend.db.repositories.survey_repo import survey_repo
 from backend.db.connection import db
 
 logger = logging.getLogger(__name__)
@@ -27,7 +31,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["tickets"])
 
 
-def parse_ticket_id(ticket_id_str: str) -> UUID:
+async def _resolve_ticket_id(ticket_id: str) -> UUID:
     """
     Parse ticket ID string to UUID.
 
@@ -35,24 +39,27 @@ def parse_ticket_id(ticket_id_str: str) -> UUID:
     - Full UUID: 550e8400-e29b-41d4-a716-446655440000
     - Short format: TICKET-550E8400 or 550E8400
     """
-    # Remove TICKET- prefix if present
-    if ticket_id_str.upper().startswith("TICKET-"):
-        ticket_id_str = ticket_id_str[7:]
+    clean_id = ticket_id.upper().replace("TICKET-", "")
 
-    # Try to parse as UUID
     try:
-        # If it's a short ID (8 chars), pad it
-        if len(ticket_id_str) == 8:
-            # This is a short ID, we can't convert to full UUID
-            # In production, you'd store a mapping or use the full UUID
-            raise ValueError("Short ticket IDs need to be mapped to full UUIDs")
-        return UUID(ticket_id_str)
-    except ValueError as e:
-        logger.warning(f"Invalid ticket ID format: {ticket_id_str}")
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid ticket ID format: {ticket_id_str}"
-        )
+        return UUID(ticket_id)
+    except ValueError:
+        try:
+            return UUID(clean_id)
+        except ValueError:
+            if len(clean_id) == 8:
+                tickets = await ticket_repo.get_all()
+                for ticket in tickets:
+                    if str(ticket.id).upper().startswith(clean_id):
+                        return ticket.id
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail=f"Ticket not found: {ticket_id}"
+                )
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Ticket not found: {ticket_id}"
+            )
 
 
 @router.get(
@@ -73,39 +80,7 @@ async def get_ticket_status(ticket_id: str):
     **Returns**: Ticket status with conversation messages
     """
     try:
-        # Parse ticket ID
-        ticket_uuid = None
-        
-        # Remove TICKET- prefix if present
-        clean_id = ticket_id.upper().replace("TICKET-", "")
-        
-        try:
-            # Try to parse as full UUID first
-            ticket_uuid = UUID(ticket_id)
-        except ValueError:
-            try:
-                # Try to parse cleaned ID as UUID
-                ticket_uuid = UUID(clean_id)
-            except ValueError:
-                # If it's a short ID (8 chars), we need to search by prefix
-                if len(clean_id) == 8:
-                    # Search for tickets matching this prefix
-                    tickets = await ticket_repo.get_all()
-                    for ticket in tickets:
-                        if str(ticket.id).upper().startswith(clean_id):
-                            ticket_uuid = ticket.id
-                            break
-                    
-                    if not ticket_uuid:
-                        raise HTTPException(
-                            status_code=status.HTTP_404_NOT_FOUND,
-                            detail=f"Ticket not found: {ticket_id}"
-                        )
-                else:
-                    raise HTTPException(
-                        status_code=status.HTTP_404_NOT_FOUND,
-                        detail=f"Ticket not found: {ticket_id}"
-                    )
+        ticket_uuid = await _resolve_ticket_id(ticket_id)
 
         # Get ticket
         ticket = await ticket_repo.get_by_id(ticket_uuid)
@@ -140,6 +115,20 @@ async def get_ticket_status(ticket_id: str):
                 delivery_status=DeliveryStatus(row["delivery_status"])
             ))
 
+        # Get survey if ticket is resolved
+        survey = None
+        if ticket.status in ("resolved", "closed"):
+            survey_data = await survey_repo.get_by_ticket_id(ticket_uuid)
+            if survey_data:
+                survey = SurveyResponse(
+                    id=str(survey_data["id"]),
+                    ticket_id=str(survey_data["ticket_id"]),
+                    rating=SurveyRating(survey_data["rating"]),
+                    reason=survey_data.get("reason"),
+                    source=survey_data["source"],
+                    created_at=survey_data["created_at"]
+                )
+
         # Build response
         return TicketStatusResponse(
             ticket_id=f"TICKET-{str(ticket.id)[:8].upper()}",
@@ -149,7 +138,8 @@ async def get_ticket_status(ticket_id: str):
             created_at=ticket.created_at,
             resolved_at=ticket.resolved_at,
             messages=messages,
-            resolution_notes=ticket.resolution_notes
+            resolution_notes=ticket.resolution_notes,
+            survey=survey
         )
 
     except HTTPException:
@@ -159,4 +149,62 @@ async def get_ticket_status(ticket_id: str):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve ticket status"
+        )
+
+
+@router.post(
+    "/ticket/{ticket_id}/survey",
+    response_model=SurveyResponse,
+    responses={
+        200: {"description": "Survey submitted"},
+        404: {"model": ErrorResponse, "description": "Ticket not found"},
+        400: {"model": ErrorResponse, "description": "Ticket not resolved"}
+    }
+)
+async def submit_survey(ticket_id: str, survey_data: SurveySubmitRequest):
+    """
+    Submit a survey response for a resolved ticket.
+
+    **Input**: Ticket ID + rating (thumbs_up/thumbs_down) + optional reason
+
+    **Returns**: Saved survey data
+    """
+    try:
+        ticket_uuid = await _resolve_ticket_id(ticket_id)
+        ticket = await ticket_repo.get_by_id(ticket_uuid)
+        if not ticket:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Ticket not found: {ticket_id}"
+            )
+
+        if ticket.status not in ("resolved", "closed"):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Survey is only available for resolved tickets"
+            )
+
+        result = await survey_repo.save_survey(
+            ticket_id=ticket_uuid,
+            rating=survey_data.rating.value,
+            reason=survey_data.reason,
+            source="api"
+        )
+
+        return SurveyResponse(
+            id=str(result["id"]),
+            ticket_id=str(result["ticket_id"]),
+            rating=SurveyRating(result["rating"]),
+            reason=result.get("reason"),
+            source=result["source"],
+            created_at=result["created_at"]
+        )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error submitting survey: {e}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to submit survey"
         )

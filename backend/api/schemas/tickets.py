@@ -85,6 +85,7 @@ class TicketStatusResponse(BaseModel):
     resolved_at: Optional[datetime] = Field(None, description="When the ticket was resolved")
     messages: list = Field(default_factory=list, description="Conversation messages")
     resolution_notes: Optional[str] = Field(None, description="Notes about resolution")
+    survey: Optional[SurveyResponse] = Field(None, description="Post-resolution survey")
 
     class Config:
         json_schema_extra = {
@@ -116,6 +117,36 @@ class TicketListResponse(BaseModel):
     """Response schema for listing tickets."""
     tickets: list[TicketStatusResponse] = Field(..., description="List of tickets")
     total: int = Field(..., description="Total number of tickets")
+
+
+class SurveyRating(str, Enum):
+    """Survey rating options."""
+    THUMBS_UP = "thumbs_up"
+    THUMBS_DOWN = "thumbs_down"
+
+
+class SurveySubmitRequest(BaseModel):
+    """Request schema for survey submission."""
+    rating: SurveyRating = Field(..., description="Thumbs up or down")
+    reason: Optional[str] = Field(None, max_length=500, description="Optional feedback reason")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "rating": "thumbs_up",
+                "reason": None
+            }
+        }
+
+
+class SurveyResponse(BaseModel):
+    """Response schema for survey."""
+    id: str = Field(..., description="Survey ID")
+    ticket_id: str = Field(..., description="Ticket ID")
+    rating: SurveyRating = Field(..., description="Survey rating")
+    reason: Optional[str] = Field(None, description="Feedback reason")
+    source: str = Field(..., description="Submission channel")
+    created_at: datetime = Field(..., description="When survey was submitted")
 
 
 class ErrorResponse(BaseModel):

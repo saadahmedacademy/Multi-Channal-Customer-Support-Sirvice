@@ -285,6 +285,44 @@ class MessageProcessor:
 
         logger.info(f"Processing ticket {ticket_id} from {channel}")
 
+        # Check if this is a survey response (thumbs up/down)
+        message_content = customer_message.get("content", "").strip().lower()
+        survey_keywords = {
+            "thumbs up": "thumbs_up", "thumbs_up": "thumbs_up",
+            "thumbs down": "thumbs_down", "thumbs_down": "thumbs_down",
+            "👍": "thumbs_up", "👎": "thumbs_down",
+        }
+        matched_rating = survey_keywords.get(message_content)
+        if not matched_rating and len(message_content) < 30:
+            for keyword, rating in survey_keywords.items():
+                if keyword in message_content:
+                    matched_rating = rating
+                    break
+        if matched_rating:
+            from backend.db.repositories.survey_repo import survey_repo
+            try:
+                await survey_repo.save_survey(
+                    ticket_id=UUID(ticket_id),
+                    rating=matched_rating,
+                    source=channel
+                )
+                logger.info(f"Survey saved for ticket {ticket_id}: {matched_rating}")
+            except Exception as e:
+                logger.warning(f"Failed to save survey for ticket {ticket_id}: {e}")
+            # Acknowledge and stop processing
+            if channel == "whatsapp":
+                await self.send_whatsapp_response(
+                    customer_info,
+                    "Thanks for your feedback! 🙏"
+                )
+            elif channel == "email":
+                await self.send_email_response(
+                    customer_info,
+                    "Thanks for your feedback!",
+                    "Re: Your Feedback"
+                )
+            return
+
         # Initialize response variables (set in escalation or AI branch)
         tokens_used: int = 0
         confidence: float | None = None
@@ -355,6 +393,25 @@ class MessageProcessor:
                 status="resolved",
                 resolution_notes=f"AI resolved with {tokens_used} tokens"
             )
+
+            # Append post-resolution survey
+            if channel == "whatsapp":
+                response_text += (
+                    "\n\n---\n*Quick question:* Did we solve your problem?\n"
+                    "Reply 👍 YES or 👎 NO"
+                )
+            elif channel == "email":
+                response_text += (
+                    "\n\n---\n"
+                    "Quick question: Did we solve your problem?\n"
+                    "Reply with YES or NO to this email"
+                )
+            else:
+                response_text += (
+                    "\n\n---\n"
+                    "Quick question: Did we solve your problem?\n"
+                    "You can submit your feedback on the ticket status page."
+                )
 
         # Step 6: Save AI response to database
         await ticket_service.add_message(

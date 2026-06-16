@@ -90,6 +90,16 @@ CREATE TABLE knowledge_base (
     CONSTRAINT chk_knowledge_category CHECK (category IN ('feature', 'howto', 'faq', 'troubleshooting'))
 );
 
+-- Ticket surveys for post-resolution feedback
+CREATE TABLE ticket_surveys (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    ticket_id UUID UNIQUE REFERENCES tickets(id) ON DELETE CASCADE,
+    rating VARCHAR(10) NOT NULL CHECK (rating IN ('thumbs_up', 'thumbs_down')),
+    reason TEXT,
+    source VARCHAR(20) DEFAULT 'direct',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 -- Indexes for performance
 CREATE INDEX idx_customers_email ON customers(email);
 CREATE INDEX idx_customers_phone ON customers(phone);
