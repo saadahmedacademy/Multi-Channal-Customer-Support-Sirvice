@@ -78,6 +78,7 @@ class SupportFormResponse(BaseModel):
 class TicketStatusResponse(BaseModel):
     """Response schema for ticket status lookup."""
     ticket_id: str = Field(..., description="Unique ticket identifier")
+    conversation_id: str = Field(..., description="Conversation UUID")
     status: TicketStatus = Field(..., description="Current ticket status")
     category: Optional[TicketCategory] = Field(None, description="Ticket category")
     priority: TicketPriority = Field(..., description="Ticket priority")

@@ -112,6 +112,7 @@ async def get_ticket_status(ticket_id: str):
         # Build response
         return TicketStatusResponse(
             ticket_id=f"TICKET-{str(ticket.id)[:8].upper()}",
+            conversation_id=str(ticket.conversation_id),
             status=TicketStatus(ticket.status),
             category=TicketCategory(ticket.category) if ticket.category else None,
             priority=TicketPriority(ticket.priority),
