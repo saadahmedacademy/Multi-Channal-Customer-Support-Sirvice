@@ -80,38 +80,27 @@ async def submit_support_form(submission: SupportFormSubmission):
         )
         logger.info(f"Customer found/created: {customer.id}")
 
-        # Step 2: Check for active conversation (within 24 hours)
-        conversation = await conversation_repo.get_active_by_customer(
+        # Step 2: Create new conversation for this web form submission
+        conversation = await conversation_repo.create(
             customer_id=customer.id,
-            hours=24
+            initial_channel=Channel.WEB_FORM.value,
+            metadata={
+                "subject": sanitized_subject,
+                "category": submission.category.value,
+                "priority": submission.priority.value
+            }
         )
+        logger.info(f"Conversation created: {conversation.id}")
 
-        # Create new conversation if none exists
-        if not conversation:
-            conversation = await conversation_repo.create(
-                customer_id=customer.id,
-                initial_channel=Channel.WEB_FORM.value,
-                metadata={
-                    "subject": sanitized_subject,
-                    "category": submission.category.value,
-                    "priority": submission.priority.value
-                }
-            )
-            logger.info(f"Conversation created: {conversation.id}")
-        else:
-            logger.info(f"Reusing existing conversation: {conversation.id}")
-
-        # Step 3: Create ticket if conversation is new
-        ticket = await ticket_repo.get_by_conversation_id(conversation.id)
-        if not ticket:
-            ticket = await ticket_repo.create(
-                conversation_id=conversation.id,
-                customer_id=customer.id,
-                source_channel=Channel.WEB_FORM.value,
-                category=submission.category.value,
-                priority=submission.priority.value
-            )
-            logger.info(f"Ticket created: {ticket.id}")
+        # Step 3: Create ticket
+        ticket = await ticket_repo.create(
+            conversation_id=conversation.id,
+            customer_id=customer.id,
+            source_channel=Channel.WEB_FORM.value,
+            category=submission.category.value,
+            priority=submission.priority.value
+        )
+        logger.info(f"Ticket created: {ticket.id}")
 
         # Step 4: Create inbound message record
         async with db.acquire() as conn:

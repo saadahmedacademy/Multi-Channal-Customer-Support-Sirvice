@@ -172,12 +172,20 @@ export default function TicketStatus() {
         const msgs = prev.messages.filter(m => m.id !== tempId);
         return {
           ...prev,
-          messages: [...msgs, {
-            id: result.response_message_id,
-            role: 'agent' as const,
-            content: result.response,
-            created_at: result.created_at,
-          }]
+          messages: [...msgs,
+            {
+              id: result.message_id,
+              role: 'customer' as const,
+              content,
+              created_at: new Date().toISOString(),
+            },
+            {
+              id: result.response_message_id,
+              role: 'agent' as const,
+              content: result.response,
+              created_at: result.created_at,
+            },
+          ]
         };
       });
     } catch {

@@ -55,9 +55,7 @@ class TestWebFormSubmission:
 
             # Setup mocks
             mock_customer_repo.find_or_create = AsyncMock(return_value=mock_customer)
-            mock_conv_repo.get_active_by_customer = AsyncMock(return_value=None)
             mock_conv_repo.create = AsyncMock(return_value=mock_conversation)
-            mock_ticket_repo.get_by_conversation_id = AsyncMock(return_value=None)
             mock_ticket_repo.create = AsyncMock(return_value=mock_ticket)
             mock_queue.publish = AsyncMock()
 
@@ -120,9 +118,7 @@ class TestWebFormSubmission:
              patch('backend.api.routes.web_form.db') as mock_db:
 
             mock_customer_repo.find_or_create = AsyncMock(return_value=mock_customer)
-            mock_conv_repo.get_active_by_customer = AsyncMock(return_value=None)
             mock_conv_repo.create = AsyncMock(return_value=mock_conversation)
-            mock_ticket_repo.get_by_conversation_id = AsyncMock(return_value=None)
             mock_ticket_repo.create = AsyncMock(return_value=mock_ticket)
             mock_queue.publish = AsyncMock()
 
@@ -197,8 +193,8 @@ class TestWebFormSubmission:
         assert response.status_code == 422
 
     @pytest.mark.asyncio
-    async def test_submit_form_reuses_active_conversation(self, client, mock_customer, mock_conversation, mock_ticket):
-        """Test that active conversations are reused within 24 hours."""
+    async def test_submit_form_always_creates_new_conversation(self, client, mock_customer, mock_conversation, mock_ticket):
+        """Test that a new conversation is created even if one already exists."""
         with patch('backend.api.routes.web_form.customer_repo') as mock_customer_repo, \
              patch('backend.api.routes.web_form.conversation_repo') as mock_conv_repo, \
              patch('backend.api.routes.web_form.ticket_repo') as mock_ticket_repo, \
@@ -206,9 +202,8 @@ class TestWebFormSubmission:
              patch('backend.api.routes.web_form.db') as mock_db:
 
             mock_customer_repo.find_or_create = AsyncMock(return_value=mock_customer)
-            # Return existing conversation
-            mock_conv_repo.get_active_by_customer = AsyncMock(return_value=mock_conversation)
-            mock_ticket_repo.get_by_conversation_id = AsyncMock(return_value=mock_ticket)
+            mock_conv_repo.create = AsyncMock(return_value=mock_conversation)
+            mock_ticket_repo.create = AsyncMock(return_value=mock_ticket)
             mock_queue.publish = AsyncMock()
 
             mock_conn = AsyncMock()
@@ -227,8 +222,9 @@ class TestWebFormSubmission:
 
             assert response.status_code == 200
 
-            # Verify conversation was NOT created (reused existing)
-            mock_conv_repo.create.assert_not_called()
+            # Verify a new conversation AND ticket were created
+            mock_conv_repo.create.assert_called_once()
+            mock_ticket_repo.create.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_submit_form_database_error(self, client):
@@ -260,9 +256,7 @@ class TestWebFormSubmission:
              patch('backend.api.routes.web_form.db') as mock_db:
 
             mock_customer_repo.find_or_create = AsyncMock(return_value=mock_customer)
-            mock_conv_repo.get_active_by_customer = AsyncMock(return_value=None)
             mock_conv_repo.create = AsyncMock(return_value=mock_conversation)
-            mock_ticket_repo.get_by_conversation_id = AsyncMock(return_value=None)
             mock_ticket_repo.create = AsyncMock(return_value=mock_ticket)
             mock_queue.publish = AsyncMock()
 
