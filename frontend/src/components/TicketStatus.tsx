@@ -42,7 +42,11 @@ const PRIORITY_COLORS: Record<string, string> = {
 
 const TICKET_ID_REGEX = /^TICKET-[A-Z0-9]{6,}$/;
 
-export default function TicketStatus() {
+interface TicketStatusProps {
+  onStartNewSession?: () => void;
+}
+
+export default function TicketStatus({ onStartNewSession }: TicketStatusProps) {
   const [ticketId, setTicketId] = useState('');
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [ticketData, setTicketData] = useState<TicketStatusData | null>(null);
@@ -163,7 +167,10 @@ export default function TicketStatus() {
         body: JSON.stringify({ content }),
       });
 
-      if (!response.ok) throw new Error('Failed to send message');
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.detail || 'Failed to send message');
+      }
 
       const result = await response.json();
 
@@ -188,8 +195,8 @@ export default function TicketStatus() {
           ]
         };
       });
-    } catch {
-      showToast('Failed to send message. Please try again.', 'error');
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Failed to send message. Please try again.', 'error');
       setTicketData(prev => {
         if (!prev) return prev;
         return {
@@ -214,6 +221,8 @@ export default function TicketStatus() {
   };
 
   const isValidTicketId = TICKET_ID_REGEX.test(ticketId);
+
+  const messageCount = ticketData ? ticketData.messages.filter(m => m.role === 'customer' || m.role === 'agent').length : 0;
 
   if (status === 'success' && ticketData) {
     return (
@@ -385,58 +394,76 @@ export default function TicketStatus() {
             <div ref={messagesEndRef} />
           </div>
 
-          {ticketData.status !== 'closed' && ticketData.status !== 'resolved' ? (
-            <div className="border-t dark:border-gray-700 pt-4">
-              <div className="flex space-x-3">
-                <input
-                  ref={inputRef}
-                  type="text"
-                  value={newMessage}
-                  onChange={(e) => setNewMessage(e.target.value)}
-                  onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } }}
-                  placeholder="Type your reply..."
-                  disabled={sending}
-                  className="flex-1 px-4 py-3 border-2 border-gray-200 dark:border-gray-600 bg-white/50 dark:bg-gray-700/50 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all backdrop-blur-sm disabled:opacity-50"
-                />
-                <button
-                  onClick={handleSendMessage}
-                  disabled={!newMessage.trim() || sending}
-                  className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all font-bold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
-                >
-                  {sending ? (
-                    <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                    </svg>
-                  ) : (
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19V5m0 0l-7 7m7-7l7 7" />
-                    </svg>
-                  )}
-                </button>
+          {(() => {
+            if (ticketData.status === 'closed' || ticketData.status === 'resolved') {
+              return (
+                <div className="border-t dark:border-gray-700 pt-4">
+                  <p className="text-center text-sm text-gray-500 dark:text-gray-400">
+                    This ticket is {ticketData.status}. No further messages can be sent.
+                  </p>
+                </div>
+              );
+            }
+            if (messageCount >= 7) {
+              return (
+                <div className="border-t dark:border-gray-700 pt-4">
+                  <p className="text-center text-sm font-medium text-gray-500 dark:text-gray-400">
+                    This conversation session has ended. For further assistance, please create a new support ticket.
+                  </p>
+                </div>
+              );
+            }
+            return (
+              <div className="border-t dark:border-gray-700 pt-4">
+                <div className="flex space-x-3">
+                  <input
+                    ref={inputRef}
+                    type="text"
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } }}
+                    placeholder="Type your reply..."
+                    disabled={sending}
+                    className="flex-1 px-4 py-3 border-2 border-gray-200 dark:border-gray-600 bg-white/50 dark:bg-gray-700/50 text-gray-900 dark:text-white rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all backdrop-blur-sm disabled:opacity-50"
+                  />
+                  <button
+                    onClick={handleSendMessage}
+                    disabled={!newMessage.trim() || sending}
+                    className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all font-bold disabled:opacity-50 disabled:cursor-not-allowed shadow-lg"
+                  >
+                    {sending ? (
+                      <svg className="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                    ) : (
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19V5m0 0l-7 7m7-7l7 7" />
+                      </svg>
+                    )}
+                  </button>
+                </div>
               </div>
-            </div>
-          ) : (
-            <div className="border-t dark:border-gray-700 pt-4">
-              <p className="text-center text-sm text-gray-500 dark:text-gray-400">
-                This ticket is {ticketData.status}. No further messages can be sent.
-              </p>
-            </div>
-          )}
+            );
+          })()}
         </div>
 
         <button
           onClick={() => {
-            setStatus('idle');
-            setTicketId('');
-            setTicketData(null);
-            setNewMessage('');
-            setThumbsDownOpen({});
-            setThumbsDownReason({});
+            if (messageCount >= 7 && onStartNewSession) {
+              onStartNewSession();
+            } else {
+              setStatus('idle');
+              setTicketId('');
+              setTicketData(null);
+              setNewMessage('');
+              setThumbsDownOpen({});
+              setThumbsDownReason({});
+            }
           }}
           className="mt-6 w-full py-3 px-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white rounded-xl hover:from-indigo-700 hover:via-purple-700 hover:to-pink-700 transition-all font-bold"
         >
-          Check Another Ticket
+          {messageCount >= 7 ? 'Start New Session' : 'Check Another Ticket'}
         </button>
       </div>
     );

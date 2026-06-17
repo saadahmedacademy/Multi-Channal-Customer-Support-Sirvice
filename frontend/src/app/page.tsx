@@ -135,7 +135,7 @@ export default function Home() {
               <SupportForm />
             </div>
             <div role="tabpanel" id="panel-check" aria-labelledby="tab-check" className={activeTab === 'check' ? '' : 'hidden'}>
-              <TicketStatus />
+              <TicketStatus onStartNewSession={() => setActiveTab('submit')} />
             </div>
           </div>
 

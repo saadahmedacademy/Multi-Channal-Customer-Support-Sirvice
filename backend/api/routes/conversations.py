@@ -161,6 +161,19 @@ async def send_follow_up(conversation_id: str, body: FollowUpMessage):
             detail="No ticket found for this conversation"
         )
 
+    # Enforce 7-message session limit (count only customer + agent messages)
+    async with db.acquire() as conn:
+        msg_count = await conn.fetchval("""
+            SELECT COUNT(*) FROM messages
+            WHERE conversation_id = $1 AND role IN ('customer', 'agent')
+        """, conv_uuid)
+
+    if msg_count is not None and msg_count >= 7:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="This conversation session has ended. For further assistance, please create a new support ticket."
+        )
+
     # Save customer message
     async with db.acquire() as conn:
         msg_row = await conn.fetchrow("""
