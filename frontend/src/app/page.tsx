@@ -17,6 +17,7 @@ const CATEGORIES = Object.keys(CATEGORY_DESCRIPTIONS);
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<'submit' | 'check'>('submit');
+  const [sessionKey, setSessionKey] = useState(0);
   const [hoveredCategory, setHoveredCategory] = useState<string | null>(null);
   const { theme, toggleTheme } = useTheme();
 
@@ -132,10 +133,10 @@ export default function Home() {
           {/* Support Form or Ticket Status - preserve state with hidden */}
           <div className="lg:col-span-2">
             <div role="tabpanel" id="panel-submit" aria-labelledby="tab-submit" className={activeTab === 'submit' ? '' : 'hidden'}>
-              <SupportForm />
+              <SupportForm key={sessionKey} />
             </div>
             <div role="tabpanel" id="panel-check" aria-labelledby="tab-check" className={activeTab === 'check' ? '' : 'hidden'}>
-              <TicketStatus onStartNewSession={() => setActiveTab('submit')} />
+              <TicketStatus key={sessionKey} onStartNewSession={() => { setActiveTab('submit'); setSessionKey(k => k + 1); }} />
             </div>
           </div>
 
