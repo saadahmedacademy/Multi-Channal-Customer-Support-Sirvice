@@ -23,7 +23,6 @@ class TestAIAgentInitialization:
     def test_ai_agent_has_required_methods(self, ai_agent):
         """Test that AI agent has all required methods."""
         assert hasattr(ai_agent, 'generate_response')
-        assert hasattr(ai_agent, '_format_conversational')
         assert hasattr(ai_agent, '_get_system_prompt')
         assert hasattr(ai_agent, '_get_fallback_response')
 
@@ -79,24 +78,6 @@ class TestResponseGeneration:
             )
             assert response is not None
             assert "unavailable" in response.lower()
-
-
-class TestChannelAwareFormatting:
-    """Test channel-aware response formatting."""
-
-    def test_format_conversational_removes_bullets(self, ai_agent):
-        """Test that bullet points are converted to prose."""
-        raw = "- Item one\n- Item two\n- Item three"
-        formatted = ai_agent._format_conversational(raw)
-        assert formatted is not None
-        assert len(formatted) > 0
-        assert "*" not in formatted
-
-    def test_format_conversational_preserves_content(self, ai_agent):
-        """Test that formatting preserves key information."""
-        raw = "Your ticket ID is #12345. Please reference this."
-        formatted = ai_agent._format_conversational(raw)
-        assert "12345" in formatted
 
 
 class TestFallbackResponse:

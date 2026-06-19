@@ -77,84 +77,6 @@ class AIAgent:
             )
         return self._http_client
 
-    def _format_conversational(self, text: str) -> str:
-        """
-        Convert markdown bullet points into natural conversational paragraphs.
-
-        Args:
-            text: Response text that may contain bullet points
-
-        Returns:
-            Formatted conversational text without markdown
-        """
-        import re
-
-        # Remove common list introductions
-        text = re.sub(r'(?:Our (?:service|main features|platform) (?:offers|includes?|provides?)[:\s]*\n+)', '', text, flags=re.IGNORECASE)
-        text = re.sub(r'(?:Here (?:are|is) (?:a few|some) (?:reasons|benefits|features)[:\s]*\n+)', '', text, flags=re.IGNORECASE)
-        text = re.sub(r'(?:(?:With|Using) our (?:service|platform), you can[:\s]*\n+)', '', text, flags=re.IGNORECASE)
-        text = re.sub(r'(?:As for .*?, here (?:are|is)[:\s]*\n+)', '', text, flags=re.IGNORECASE)
-
-        # Split into lines
-        lines = text.split('\n')
-        formatted_lines = []
-        bullet_items = []
-        in_bullet_section = False
-
-        for line in lines:
-            stripped = line.strip()
-
-            # Check if line is a bullet point
-            if re.match(r'^[\*\-\•]\s+', stripped):
-                in_bullet_section = True
-                # Extract content after bullet
-                content = re.sub(r'^[\*\-\•]\s+', '', stripped).strip()
-                # Remove trailing punctuation for cleaner joining
-                content = re.sub(r'[,;]$', '', content)
-                bullet_items.append(content)
-            else:
-                # If we have accumulated bullet items, convert them to sentences
-                if bullet_items:
-                    # Create natural flowing text from bullet items
-                    if len(bullet_items) == 1:
-                        natural_text = f"We offer {bullet_items[0].lower()}."
-                    elif len(bullet_items) == 2:
-                        natural_text = f"We offer {bullet_items[0].lower()} and {bullet_items[1].lower()}."
-                    elif len(bullet_items) == 3:
-                        natural_text = f"We offer {bullet_items[0].lower()}, {bullet_items[1].lower()}, and {bullet_items[2].lower()}."
-                    else:
-                        # Group into 2-3 sentences for readability
-                        mid = len(bullet_items) // 2
-                        first_group = ', '.join([item.lower() for item in bullet_items[:mid]])
-                        second_group = ', and '.join([item.lower() for item in bullet_items[mid:]])
-                        natural_text = f"We offer {first_group}. You'll also get {second_group}."
-
-                    formatted_lines.append(natural_text)
-                    bullet_items = []
-                    in_bullet_section = False
-
-                # Add the non-bullet line if it's not empty
-                if stripped and not re.match(r'(?:Our|Here|With|As for)', stripped, re.IGNORECASE):
-                    formatted_lines.append(stripped)
-
-        # Handle remaining bullet items at end
-        if bullet_items:
-            if len(bullet_items) == 1:
-                natural_text = f"We offer {bullet_items[0].lower()}."
-            elif len(bullet_items) == 2:
-                natural_text = f"We offer {bullet_items[0].lower()} and {bullet_items[1].lower()}."
-            else:
-                mid = len(bullet_items) // 2
-                first_group = ', '.join([item.lower() for item in bullet_items[:mid]])
-                second_group = ', and '.join([item.lower() for item in bullet_items[mid:]])
-                natural_text = f"We offer {first_group}. You'll also get {second_group}."
-            formatted_lines.append(natural_text)
-
-        # Join lines into paragraphs
-        result = '\n\n'.join(formatted_lines)
-
-        return result
-
     async def close(self) -> None:
         """Close the shared HTTP client."""
         if self._http_client and not self._http_client.is_closed:
@@ -178,38 +100,41 @@ class AIAgent:
         """
         channel_config = CHANNEL_CONFIGS.get(channel, CHANNEL_CONFIGS["web_form"])
 
-        base_prompt = f"""You are a friendly customer support assistant. CRITICAL: You must write in plain conversational paragraphs ONLY, exactly like ChatGPT or Claude.
+        base_prompt = f"""You are a friendly customer support assistant. Your responses must be well-formatted, scannable, and professional.
 
 FORMATTING RULES (MUST FOLLOW):
-- Write ONLY in plain text paragraphs
-- NEVER use asterisks (*), dashes (-), or bullet points
-- NEVER use markdown syntax (no **, no _, no #)
-- NEVER create lists with special characters
-- Write like you're texting a friend - natural and conversational
+- Use **bold** for important words, headings, or key terms
+- Use bullet points (-) for unordered lists
+- Use numbered lists (1. 2. 3.) when order matters
+- Keep paragraphs short — 2 to 3 sentences max, separated by a blank line
+- Use {channel_config['format']} style
 - Keep your tone {channel_config['tone']}
 
-CORRECT EXAMPLE:
-"Our service provides great security, easy access from anywhere, and personalized recommendations. You'll also get 24/7 support whenever you need help. Everything is designed to make your experience smooth and enjoyable."
+EXAMPLE:
+"Thank you for contacting support. Here are the main features we offer:
 
-WRONG EXAMPLE (DO NOT DO THIS):
-"Our service offers:
-* Great security
-* Easy access
-* Personalized recommendations"
+- **Security**: End-to-end encryption for all your data
+- **Access**: Available on all devices, anytime
+- **Support**: 24/7 customer assistance
 
-HOW TO STRUCTURE YOUR RESPONSE:
+Please let us know if you need further assistance."
+
+RESPONSE STRUCTURE:
 - Start with: "{channel_config['greeting']}"
-- Write 2-3 short paragraphs that flow naturally
-- Weave multiple points into sentences instead of listing them
-- Use "and", "also", "plus" to connect ideas smoothly
+- Use 2-3 short paragraphs separated by blank lines
+- Use lists (bullet or ordered) where listing items improves clarity
+- Bold key terms with **double asterisks**
+- End with a friendly closing
 - End with: "{channel_config['closing']}"
 - Maximum {channel_config['max_length']} characters
 
-IMPORTANT:
-- If unsure, be honest and offer to connect them with a person
-- Never make up information
-- Use knowledge base info when provided
-- Be empathetic and helpful"""
+CONTENT SAFETY RULES (CRITICAL):
+- Only answer questions about our products, services, technical support, billing, feedback, or bug reports
+- If a question is outside these topics (e.g. general knowledge, personal advice, inappropriate content, harassment), politely refuse: "I'm here to help with questions about our products and services. Could you please ask a question related to your support request?"
+- Never use inappropriate, offensive, or vulgar language
+- Never make up information — if unsure, be honest and offer to connect with a person
+- Be empathetic, helpful, and professional at all times
+- Use knowledge base info when provided"""
 
         if knowledge_context:
             context_text = "\n\nRelevant Knowledge Base:\n"
@@ -268,24 +193,19 @@ IMPORTANT:
             if self.openrouter_api_key:
                 response, tokens = await self._call_openrouter(messages)
                 if response:
-                    formatted_response = self._format_conversational(response)
-                    return formatted_response, tokens, 0.9
+                    return response, tokens, 0.9
 
             # Fallback to Hugging Face
             if self.huggingface_api_key:
                 response, tokens = await self._call_huggingface(messages)
                 if response:
-                    logger.info(f"Raw HF response: {response[:200]}...")
-                    formatted_response = self._format_conversational(response)
-                    logger.info(f"Formatted response: {formatted_response[:200]}...")
-                    return formatted_response, tokens, 0.85
+                    return response, tokens, 0.85
 
             # Fallback to Gemini
             if self.gemini_api_key:
                 response, tokens = await self._call_gemini(message, conversation_history)
                 if response:
-                    formatted_response = self._format_conversational(response)
-                    return formatted_response, tokens, 0.8
+                    return response, tokens, 0.8
 
             logger.error("No AI API keys configured")
             return self._get_fallback_response(channel), 0, None
