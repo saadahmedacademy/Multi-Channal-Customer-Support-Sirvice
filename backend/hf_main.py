@@ -189,7 +189,7 @@ async def main() -> None:
 
     config = uvicorn.Config(
         app,
-        host="0.0.0.0",
+        host="0.0.0.0",  # nosec - required for containerized deployment
         port=PORT,
         log_level="info",
         lifespan="on",

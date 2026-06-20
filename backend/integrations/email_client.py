@@ -108,7 +108,7 @@ class GmailClient:
         self._refreshing_token = True
 
         try:
-            token_url = "https://oauth2.googleapis.com/token"
+            token_url = "https://oauth2.googleapis.com/token"  # nosec - OAuth2 endpoint URL, not a password
             payload = {
                 "client_id": self.client_id,
                 "client_secret": self.client_secret,
