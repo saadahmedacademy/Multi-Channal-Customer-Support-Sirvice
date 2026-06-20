@@ -1,3 +1,32 @@
+# Session State — 2026-06-20
+
+## Current Task
+Remove markdown formatting from AI responses — plain conversational text for non-tech users
+
+## Active Decisions
+- **Web form session isolation**: Removed `get_active_by_customer` reuse — every web form submission starts a new session. Follow-ups via chat bar stay within that session.
+- **Per-message feedback** instead of ticket-level survey: thumbs up/down stored on individual messages, not a separate table
+- **Multi-turn conversations**: tickets stay `in_progress` after AI response (not auto-resolved); follow-up messages trigger AI with full history
+- **WhatsApp/Email**: feedback prompt appended to response text (emojis), detected on reply → saved to latest agent message
+- **Web frontend**: interactive thumbs up/down buttons + chat input bar for follow-up
+- Thumbs down opens inline input asking "What went wrong?"
+
+## Blockers
+None
+
+## Recent Changes
+- `backend/worker/ai_agent.py` — Replaced markdown formatting prompt with plain conversational text instructions; added content safety rules (refuse code/homework/inappropriate content)
+- `backend/api/routes/web_form.py` — Removed `get_active_by_customer` + `get_by_conversation_id`; always creates new conversation + ticket unconditionally
+- `tests/api/test_web_form_endpoints.py` — Updated 4 tests to expect new behavior (always creates new session); removed stale mocks
+- `.opencode/context.md` — Re-scanned project; updated routes, conventions, navigation patterns
+
+## Next Steps
+1. Run migration `004_add_message_feedback.sql` on Supabase
+2. Push to deploy
+3. Test multi-turn chat on web + WhatsApp + email
+
+---
+
 # Session State — 2026-06-17
 
 ## Current Task
@@ -18,41 +47,6 @@ None
 - `backend/api/routes/web_form.py` — Removed `get_active_by_customer` + `get_by_conversation_id`; always creates new conversation + ticket unconditionally
 - `tests/api/test_web_form_endpoints.py` — Updated 4 tests to expect new behavior (always creates new session); removed stale mocks
 - `.opencode/context.md` — Re-scanned project; updated repos (survey→message), routes, frontend API count, web_form convention
-
-## Next Steps
-1. Run migration `004_add_message_feedback.sql` on Supabase
-2. Push to deploy
-3. Test multi-turn chat on web + WhatsApp + email
-
----
-
-# Session State — 2026-06-16
-
-## Current Task
-Replaced old survey system with inline per-message feedback + multi-turn chat
-
-## Active Decisions
-- **Per-message feedback** instead of ticket-level survey: thumbs up/down stored on individual messages, not a separate table
-- **Multi-turn conversations**: tickets stay `in_progress` after AI response (not auto-resolved); follow-up messages trigger AI with full history
-- **WhatsApp/Email**: feedback prompt appended to response text (emojis), detected on reply → saved to latest agent message
-- **Web frontend**: interactive thumbs up/down buttons + chat input bar for follow-up
-- Thumbs down opens inline input asking "What went wrong?"
-
-## Blockers
-None
-
-## Recent Changes
-- `database/schema.sql` — Removed `ticket_surveys` table
-- `database/migrations/004_add_message_feedback.sql` — New migration: add feedback columns to messages
-- `backend/db/repositories/message_repo.py` — New repo: get_by_conversation, set_feedback, get_latest_agent_message
-- `backend/api/schemas/messages.py` — Added FeedbackRating, FeedbackSubmit, FollowUpMessage, FollowUpResponse; added feedback fields to MessageSchema
-- `backend/api/schemas/tickets.py` — Removed old SurveyRating, SurveySubmitRequest, SurveyResponse
-- `backend/api/routes/tickets.py` — Removed POST /ticket/{ticket_id}/survey; uses message_repo
-- `backend/api/routes/conversations.py` — Added POST /{id}/messages (follow-up) + POST /messages/{id}/feedback
-- `backend/worker/message_processor.py` — No auto-resolve; feedback saves to last agent message; multi-turn support
-- `frontend/src/components/TicketStatus.tsx` — Full rewrite: chat bubbles with 👍/👎 buttons, input bar, thumbs-down reason input
-- `frontend/src/app/api/conversations/[id]/messages/route.ts` — New frontend API proxy
-- `frontend/src/app/api/messages/[messageId]/feedback/route.ts` — New frontend API proxy
 
 ## Next Steps
 1. Run migration `004_add_message_feedback.sql` on Supabase
