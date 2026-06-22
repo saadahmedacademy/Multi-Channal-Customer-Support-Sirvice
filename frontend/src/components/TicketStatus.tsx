@@ -117,7 +117,10 @@ export default function TicketStatus({ onStartNewSession }: TicketStatusProps) {
         body: JSON.stringify({ rating, reason: reason || null }),
       });
 
-      if (!response.ok) throw new Error('Failed');
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.detail || 'Failed to submit feedback');
+      }
 
       if (rating === 'thumbs_up') {
         showToast('Thanks for your feedback! 🙏', 'success');

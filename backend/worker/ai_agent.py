@@ -6,6 +6,7 @@ import os
 import logging
 import asyncio
 import json
+import re
 from datetime import datetime
 
 from backend.config.settings import settings
@@ -27,7 +28,7 @@ CHANNEL_CONFIGS = {
         "tone": "professional and helpful",
         "max_length": 1000,
         "format": "detailed with clear structure",
-        "greeting": "Thank you for contacting support.",
+        "greeting": "Thank you for contacting our AI Support Center.",
         "closing": "Please let us know if you need further assistance."
     },
     "whatsapp": {
@@ -86,7 +87,8 @@ class AIAgent:
     def _get_system_prompt(
         self,
         channel: str,
-        knowledge_context: List[Dict[str, str]] = None
+        knowledge_context: List[Dict[str, str]] = None,
+        is_first_message: bool = True
     ) -> str:
         """
         Build system prompt based on channel and context.
@@ -94,11 +96,15 @@ class AIAgent:
         Args:
             channel: Communication channel
             knowledge_context: Relevant knowledge base entries
+            is_first_message: Whether this is the first message in the session
 
         Returns:
             System prompt string
         """
         channel_config = CHANNEL_CONFIGS.get(channel, CHANNEL_CONFIGS["web_form"])
+
+        greeting_instruction = f'\n- Start with: "{channel_config["greeting"]}"' if is_first_message else ""
+        closing_instruction = f'\n- End with: "{channel_config["closing"]}"' if is_first_message else ""
 
         base_prompt = f"""You are a friendly customer support assistant. Your responses must be conversational, natural, and easy to read — like a human support agent.
 
@@ -110,18 +116,16 @@ FORMATTING RULES (MUST FOLLOW):
 - Keep your tone {channel_config['tone']}
 
 EXAMPLE:
-"Thank you for contacting support. Here are the main features we offer.
+"Thank you for contacting our AI Support Center. Here are the main features we offer.
 
 We provide end-to-end security to keep your data safe. You can access your account from any device, anytime. Our team is available 24/7 if you ever need help.
 
 Please let us know if you need further assistance."
 
-RESPONSE STRUCTURE:
-- Start with: "{channel_config['greeting']}"
+RESPONSE STRUCTURE:{greeting_instruction}
 - Use 2-3 short paragraphs separated by blank lines
 - Use natural language instead of bullet points or numbered lists
-- End with a friendly closing
-- End with: "{channel_config['closing']}"
+- End with a friendly closing{closing_instruction}
 - Maximum {channel_config['max_length']} characters
 
 CONTENT SAFETY RULES (CRITICAL):
@@ -165,7 +169,8 @@ CONTENT SAFETY RULES (CRITICAL):
         Returns:
             Tuple of (response_text, tokens_used, confidence_score)
         """
-        system_prompt = self._get_system_prompt(channel, knowledge_context)
+        is_first_message = not conversation_history
+        system_prompt = self._get_system_prompt(channel, knowledge_context, is_first_message)
 
         # Build messages array
         messages = [{"role": "system", "content": system_prompt}]
@@ -191,19 +196,19 @@ CONTENT SAFETY RULES (CRITICAL):
             if self.openrouter_api_key:
                 response, tokens = await self._call_openrouter(messages)
                 if response:
-                    return response, tokens, 0.9
+                    return self._strip_markdown(response), tokens, 0.9
 
             # Fallback to Hugging Face
             if self.huggingface_api_key:
                 response, tokens = await self._call_huggingface(messages)
                 if response:
-                    return response, tokens, 0.85
+                    return self._strip_markdown(response), tokens, 0.85
 
             # Fallback to Gemini
             if self.gemini_api_key:
                 response, tokens = await self._call_gemini(message, conversation_history)
                 if response:
-                    return response, tokens, 0.8
+                    return self._strip_markdown(response), tokens, 0.8
 
             logger.error("No AI API keys configured")
             return self._get_fallback_response(channel), 0, None
@@ -211,6 +216,18 @@ CONTENT SAFETY RULES (CRITICAL):
         except Exception as e:
             logger.error(f"AI generation error: {e}", exc_info=True)
             return self._get_fallback_response(channel), 0, None
+
+    @staticmethod
+    def _strip_markdown(text: str) -> str:
+        text = re.sub(r'\*\*(.+?)\*\*', r'\1', text)
+        text = re.sub(r'\*(.+?)\*', r'\1', text)
+        text = re.sub(r'__(.+?)__', r'\1', text)
+        text = re.sub(r'_(.+?)_', r'\1', text)
+        text = re.sub(r'`{1,3}[^`]*`{1,3}', '', text)
+        text = re.sub(r'^#{1,6}\s+', '', text, flags=re.MULTILINE)
+        text = re.sub(r'^[-*]\s+', '', text, flags=re.MULTILINE)
+        text = re.sub(r'^\d+\.\s+', '', text, flags=re.MULTILINE)
+        return text.strip()
 
     async def _call_openrouter(
         self,
