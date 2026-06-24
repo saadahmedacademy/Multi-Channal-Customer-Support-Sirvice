@@ -44,7 +44,6 @@ async def check_queue() -> Dict[str, Any]:
 
         return {
             "status": "healthy" if is_connected else "unhealthy",
-            "bootstrap_servers": settings.kafka_bootstrap_servers,
             "details": "Queue connection successful"
         }
     except Exception as e:

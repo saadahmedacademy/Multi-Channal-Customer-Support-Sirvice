@@ -1,6 +1,6 @@
 """Email webhook endpoints for receiving emails and status updates."""
 
-from fastapi import APIRouter, Request, HTTPException, status
+from fastapi import APIRouter, Request, HTTPException, status, Depends
 from fastapi.responses import JSONResponse, PlainTextResponse
 import logging
 import base64
@@ -14,6 +14,7 @@ from backend.config.settings import settings
 from backend.integrations.queue_client import queue_client, TOPICS
 from backend.db.connection import db
 from backend.integrations.email_client import gmail_client
+from backend.utils.auth import get_api_key
 
 logger = logging.getLogger(__name__)
 
@@ -154,6 +155,14 @@ async def email_webhook_receive(request: Request):
             detail="Invalid JSON"
         )
 
+    # Basic payload validation: require Gmail Pub/Sub format or known email fields
+    if not ("message" in data and "data" in data["message"]) and not any(k in data for k in ["from_email", "from", "subject"]):
+        logger.warning(f"Email webhook received unrecognized payload: {str(data)[:200]}")
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Unrecognized email payload format"
+        )
+
     logger.debug(f"Email webhook received: {data}")
 
     # Handle Gmail Pub/Sub format
@@ -285,7 +294,7 @@ async def test_email_webhook():
     }
 
 
-@router.post("/email/gmail/sync")
+@router.post("/email/gmail/sync", dependencies=[Depends(get_api_key)])
 async def sync_gmail_emails(request: Request):
     """
     Manually trigger Gmail email sync.

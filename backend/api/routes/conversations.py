@@ -78,7 +78,7 @@ async def get_conversation(conversation_id: str):
     }
 
 
-@router.get("/{conversation_id}/history")
+@router.get("/{conversation_id}/history", dependencies=[Depends(get_api_key)])
 async def get_conversation_history(
     conversation_id: str,
     limit: int = 50
@@ -130,7 +130,7 @@ async def get_conversation_history(
     }
 
 
-@router.post("/{conversation_id}/messages")
+@router.post("/{conversation_id}/messages", dependencies=[Depends(get_api_key)])
 async def send_follow_up(conversation_id: str, body: FollowUpMessage):
     """
     Send a follow-up message in an existing conversation and get AI response.
@@ -227,7 +227,7 @@ async def send_follow_up(conversation_id: str, body: FollowUpMessage):
     )
 
 
-@router.post("/messages/{message_id}/feedback")
+@router.post("/messages/{message_id}/feedback", dependencies=[Depends(get_api_key)])
 async def submit_feedback(message_id: str, body: FeedbackSubmit):
     """
     Submit thumbs up/down feedback for a specific message.

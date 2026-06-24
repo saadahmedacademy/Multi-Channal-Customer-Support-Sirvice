@@ -94,8 +94,11 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
     """FastAPI middleware for rate limiting."""
 
     async def dispatch(self, request: Request, call_next):
-        # Get client IP
-        client_ip = request.client.host if request.client else "unknown"
+        # Get client IP (respect reverse proxy headers)
+        forwarded_for = request.headers.get("X-Forwarded-For")
+        client_ip = forwarded_for.split(",")[0].strip() if forwarded_for else (
+            request.client.host if request.client else "unknown"
+        )
 
         # Skip rate limiting for health checks
         if request.url.path in ["/health", "/"]:

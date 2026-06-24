@@ -6,7 +6,7 @@ version: '3.8'
 services:
   # Redpanda - Message Queue
   redpanda:
-    image: docker.redpanda.com/redpandadata/redpanda:latest
+    image: docker.redpanda.com/redpandadata/redpanda:v24.2.18
     container_name: ai-support-redpanda
     command:
       - redpanda
@@ -19,19 +19,17 @@ services:
       - --node-id
       - '0'
       - --kafka-addr
-      - PLAINTEXT://0.0.0.0:29092,OUTSIDE://0.0.0.0:9092
+      - PLAINTEXT://0.0.0.0:29092
       - --advertise-kafka-addr
-      - PLAINTEXT://redpanda:29092,OUTSIDE://localhost:9092
+      - PLAINTEXT://redpanda:29092
       - --rpc-addr
       - 0.0.0.0:33145
       - --advertise-rpc-addr
       - redpanda:33145
-    ports:
-      - "9092:9092"
     volumes:
       - redpanda_data:/var/lib/redpanda/data
     networks:
-      - ai-support-network
+      - backend_net
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "rpk cluster health | grep -q 'Healthy:.*true' || exit 1"]
@@ -73,7 +71,8 @@ services:
       redpanda:
         condition: service_healthy
     networks:
-      - ai-support-network
+      - frontend_net
+      - backend_net
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
@@ -115,7 +114,7 @@ services:
       backend:
         condition: service_healthy
     networks:
-      - ai-support-network
+      - backend_net
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pgrep -f message_processor.py || exit 1"]
@@ -140,7 +139,7 @@ services:
       backend:
         condition: service_healthy
     networks:
-      - ai-support-network
+      - frontend_net
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "node -e \"require('http').get('http://localhost:3000/api/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})\""]
@@ -150,7 +149,9 @@ services:
       start_period: 40s
 
 networks:
-  ai-support-network:
+  frontend_net:
+    driver: bridge
+  backend_net:
     driver: bridge
 
 volumes:

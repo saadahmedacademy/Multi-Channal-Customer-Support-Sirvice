@@ -1,13 +1,14 @@
 """Link customer identifiers endpoint."""
 
 from uuid import UUID
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 from pydantic import BaseModel, EmailStr
 from typing import Optional
 import logging
 
 from backend.db.repositories.customer_repo import customer_repo, normalize_phone
 from backend.db.repositories.customer_identifier_repo import customer_identifier_repo
+from backend.utils.auth import get_api_key
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +30,7 @@ class LinkIdentifierResponse(BaseModel):
     identifiers: list
 
 
-@router.post("/link-identifiers", response_model=LinkIdentifierResponse)
+@router.post("/link-identifiers", response_model=LinkIdentifierResponse, dependencies=[Depends(get_api_key)])
 async def link_customer_identifiers(request: LinkIdentifierRequest):
     """
     Link customer identifiers (email and phone) to unify their profile.
@@ -193,7 +194,7 @@ async def link_customer_identifiers(request: LinkIdentifierRequest):
         )
 
 
-@router.get("/{customer_id}/identifiers")
+@router.get("/{customer_id}/identifiers", dependencies=[Depends(get_api_key)])
 async def get_customer_identifiers(customer_id: str):
     """
     Get all identifiers linked to a customer.

@@ -1,8 +1,10 @@
 """Ticket status lookup endpoint."""
 
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, HTTPException, status, Depends
 from uuid import UUID
 import logging
+
+from backend.utils.auth import get_api_key
 
 from backend.api.schemas.tickets import (
     TicketStatusResponse,
@@ -67,7 +69,8 @@ async def _resolve_ticket_id(ticket_id: str) -> UUID:
         200: {"description": "Ticket found"},
         404: {"model": ErrorResponse, "description": "Ticket not found"},
         500: {"model": ErrorResponse, "description": "Internal server error"}
-    }
+    },
+    dependencies=[Depends(get_api_key)]
 )
 async def get_ticket_status(ticket_id: str):
     """

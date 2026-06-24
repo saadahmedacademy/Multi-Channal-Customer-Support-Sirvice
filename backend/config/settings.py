@@ -66,7 +66,7 @@ class Settings(BaseSettings):
         description="Meta WhatsApp business ID"
     )
     whatsapp_verify_token: Optional[str] = Field(
-        default="whatsapp-verify-token",
+        default=None,
         description="WhatsApp webhook verification token"
     )
     whatsapp_app_secret: Optional[str] = Field(
@@ -175,7 +175,13 @@ class Settings(BaseSettings):
         """Validate required settings."""
         if not self.database_url:
             raise ValueError("DATABASE_URL is required")
-        
+
+        if self.is_production:
+            if not self.whatsapp_verify_token:
+                raise ValueError("WHATSAPP_VERIFY_TOKEN is required in production")
+            if not self.internal_api_keys:
+                raise ValueError("INTERNAL_API_KEYS is required in production")
+
         if not self.openrouter_api_key and not self.gemini_api_key:
             raise ValueError("Either OPENROUTER_API_KEY or GEMINI_API_KEY is required")
 

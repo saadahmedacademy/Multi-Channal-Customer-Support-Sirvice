@@ -87,13 +87,22 @@ async def get_api_key(
             detail="API authentication not configured"
         )
 
-    # Check if provided key matches any valid key
-    for valid_key in valid_keys:
-        if hmac.compare_digest(api_key, valid_key):
-            logger.debug("API key validated successfully")
-            return api_key
+    # Hash the incoming key for comparison
+    provided_hash = hash_api_key(api_key)
 
-    logger.warning(f"Invalid API key attempt: {api_key[:8]}...")
+    # Check if provided key matches any valid key
+    for stored_key in valid_keys:
+        # Support both SHA-256 hashed storage and plaintext (dev fallback)
+        if len(stored_key) == 64 and all(c in '0123456789abcdef' for c in stored_key.lower()):
+            if hmac.compare_digest(provided_hash, stored_key):
+                logger.debug("API key validated successfully")
+                return api_key
+        else:
+            if hmac.compare_digest(api_key, stored_key):
+                logger.debug("API key validated successfully")
+                return api_key
+
+    logger.warning("Invalid API key attempt")
     raise HTTPException(
         status_code=status.HTTP_403_FORBIDDEN,
         detail="Invalid API key"

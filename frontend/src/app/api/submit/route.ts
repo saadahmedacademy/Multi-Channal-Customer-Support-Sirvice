@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { forwardBackendResponse, createErrorResponse } from '@/lib/api-utils';
+import { forwardBackendResponse, createErrorResponse, getAuthHeaders, getClientIp, checkRateLimit, rateLimitResponse } from '@/lib/api-utils';
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8000';
 
@@ -18,8 +18,15 @@ interface SupportFormResponse {
   estimated_response_time: string;
 }
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const VALID_CATEGORIES = ['general', 'technical', 'billing', 'feedback', 'bug_report'];
+const VALID_PRIORITIES = ['low', 'medium', 'high'];
+
 export async function POST(request: NextRequest) {
   try {
+    const ip = getClientIp(request);
+    if (!checkRateLimit(ip)) return rateLimitResponse();
+
     const body: SupportFormSubmission = await request.json();
 
     if (!body.name || !body.email || !body.subject || !body.message) {
@@ -29,8 +36,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(body.email)) {
+    if (!EMAIL_REGEX.test(body.email)) {
       return NextResponse.json(
         { detail: 'Invalid email format' },
         { status: 400 }
@@ -44,9 +50,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (body.category && !VALID_CATEGORIES.includes(body.category)) {
+      return NextResponse.json(
+        { detail: 'Invalid category' },
+        { status: 400 }
+      );
+    }
+
+    if (body.priority && !VALID_PRIORITIES.includes(body.priority)) {
+      return NextResponse.json(
+        { detail: 'Invalid priority' },
+        { status: 400 }
+      );
+    }
+
     const response = await fetch(`${BACKEND_URL}/support/submit`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
       body: JSON.stringify({
         name: body.name,
         email: body.email,

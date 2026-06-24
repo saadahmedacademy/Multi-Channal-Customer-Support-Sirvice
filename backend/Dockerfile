@@ -37,7 +37,7 @@ COPY --chown=appuser:appuser backend/ ./backend/
 COPY --chown=appuser:appuser database/ ./database/
 COPY --chown=appuser:appuser context/ ./context/
 COPY --chown=appuser:appuser alembic.ini .
-COPY --chown=appuser:appuser .env.example .env
+# Note: Runtime env vars injected via docker-compose or container runtime
 
 # Set Python path
 ENV PATH=/home/appuser/.local/bin:$PATH

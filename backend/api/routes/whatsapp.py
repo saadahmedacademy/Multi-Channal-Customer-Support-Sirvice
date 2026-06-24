@@ -102,8 +102,8 @@ async def whatsapp_webhook_receive(request: Request):
     # Get raw body for signature verification
     body = await request.body()
     
-    # Verify signature (skip in development)
-    if settings.is_production and not verify_whatsapp_signature(body, signature):
+    # Verify signature
+    if not verify_whatsapp_signature(body, signature):
         logger.error("Invalid WhatsApp webhook signature")
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

@@ -126,7 +126,7 @@ async def get_channel_metrics() -> Dict[str, Any]:
     }
 
 
-@router.get("/tickets/summary")
+@router.get("/tickets/summary", dependencies=[Depends(get_api_key)])
 async def get_ticket_summary(
     days: int = 7
 ) -> Dict[str, Any]:

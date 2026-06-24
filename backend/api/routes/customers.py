@@ -70,7 +70,7 @@ async def lookup_customer(
     }
 
 
-@router.get("/{customer_id}/conversations")
+@router.get("/{customer_id}/conversations", dependencies=[Depends(get_api_key)])
 async def get_customer_conversations(
     customer_id: str,
     limit: int = Query(20, ge=1, le=100, description="Number of conversations to return")

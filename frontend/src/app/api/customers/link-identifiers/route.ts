@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { forwardBackendResponse, createErrorResponse } from '@/lib/api-utils';
+import { forwardBackendResponse, createErrorResponse, getAuthHeaders, getClientIp, checkRateLimit, rateLimitResponse } from '@/lib/api-utils';
 
 const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8000';
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_REGEX = /^\+[1-9]\d{1,14}$/;
 
 interface LinkIdentifiersRequest {
@@ -26,6 +27,9 @@ interface LinkIdentifiersResponse {
 
 export async function POST(request: NextRequest) {
   try {
+    const ip = getClientIp(request);
+    if (!checkRateLimit(ip)) return rateLimitResponse();
+
     const body: LinkIdentifiersRequest = await request.json();
 
     if (!body.email && !body.phone) {
@@ -35,14 +39,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (body.email) {
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(body.email)) {
-        return NextResponse.json(
-          { detail: 'Invalid email format' },
-          { status: 400 }
-        );
-      }
+    if (body.email && !EMAIL_REGEX.test(body.email)) {
+      return NextResponse.json(
+        { detail: 'Invalid email format' },
+        { status: 400 }
+      );
     }
 
     if (body.phone && !PHONE_REGEX.test(body.phone)) {
@@ -54,7 +55,7 @@ export async function POST(request: NextRequest) {
 
     const response = await fetch(`${BACKEND_URL}/customers/link-identifiers`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
       body: JSON.stringify(body),
     });
 
