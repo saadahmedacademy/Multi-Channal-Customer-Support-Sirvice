@@ -13,7 +13,7 @@ aiokafka==0.12.0
 
 # Pydantic for validation
 pydantic==2.10.4
-pydantic-settings==2.7.1
+pydantic-settings==2.14.2
 email-validator==2.1.0
 
 # HTTP client
