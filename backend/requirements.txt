@@ -9,7 +9,7 @@ sqlalchemy[asyncio]==2.0.25
 alembic==1.13.1
 
 # Message Queue (Redpanda/Kafka)
-aiokafka==0.12.0
+aiokafka==0.14.0
 
 # Pydantic for validation
 pydantic==2.10.4
