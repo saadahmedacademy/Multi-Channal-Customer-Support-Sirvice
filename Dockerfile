@@ -1,8 +1,12 @@
 # Hugging Face Spaces Dockerfile — unified backend + worker
-# All Python deps provide manylinux wheels, so gcc/C compiler not needed.
+# gcc is in builder (not runtime) so C extensions can compile from source
+# if no pre-built wheel is available for the target platform (ARM64).
 FROM python:3.11-slim AS builder
 
 WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends gcc \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir --prefer-binary --retries 5 --timeout 30 --user -r requirements.txt
