@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y \
 
 # Copy requirements and install Python dependencies
 COPY backend/requirements.txt .
-RUN pip install --no-cache-dir --user -r requirements.txt
+RUN pip install --no-cache-dir --prefer-binary --retries 5 --timeout 30 --user -r requirements.txt
 
 # Stage 2: Runtime - Minimal production image
 FROM python:3.11-slim

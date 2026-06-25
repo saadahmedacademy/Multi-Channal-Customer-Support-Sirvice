@@ -1,30 +1,25 @@
 # Hugging Face Spaces Dockerfile — unified backend + worker
-# Stage 1: Builder
+# All Python deps provide manylinux wheels, so gcc/C compiler not needed.
 FROM python:3.11-slim AS builder
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc \
-    && rm -rf /var/lib/apt/lists/*
-
 COPY backend/requirements.txt .
-RUN pip install --no-cache-dir --user -r requirements.txt
+RUN pip install --no-cache-dir --prefer-binary --retries 5 --timeout 30 --user -r requirements.txt
 
-# Stage 2: Runtime
-FROM python:3.11-slim
+FROM python:3.11-slim AS runtime
 
 RUN addgroup --system --gid 1001 appgroup && adduser --system --uid 1001 appuser
 
 WORKDIR /app
 
 COPY --from=builder /root/.local /home/appuser/.local
-RUN chown -R appuser:appuser /home/appuser/.local
-
 COPY backend/ ./backend/
 COPY context/ ./context/
 COPY database/ ./database/
 COPY alembic.ini .
+
+RUN chown -R appuser:appuser /home/appuser/.local
 
 ENV QUEUE_MODE=local
 ENV PYTHONPATH=/app
