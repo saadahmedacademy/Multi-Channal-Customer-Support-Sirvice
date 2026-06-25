@@ -13,7 +13,7 @@ RUN pip install --no-cache-dir --prefer-binary --retries 5 --timeout 30 --user -
 
 FROM python:3.11-slim AS runtime
 
-RUN addgroup --system --gid 1001 appgroup && adduser --system --uid 1001 appuser
+RUN useradd -m -u 1001 appuser
 
 WORKDIR /app
 
