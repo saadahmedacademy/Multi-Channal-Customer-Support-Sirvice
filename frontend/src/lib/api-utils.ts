@@ -1,11 +1,13 @@
 import { NextResponse } from 'next/server';
+import { RequestCookies } from 'next/dist/compiled/@edge-runtime/cookies';
 
 const requestCounts = new Map<string, number[]>();
 const RATE_LIMIT_MAX = 30;
 const RATE_LIMIT_WINDOW_MS = 60_000;
 
-export function getAuthHeaders(): Record<string, string> {
-  const apiKey = process.env.INTERNAL_API_KEY;
+export function getAuthHeaders(cookies?: RequestCookies): Record<string, string> {
+  const adminKey = cookies?.get('admin-api-key')?.value;
+  const apiKey = adminKey || process.env.INTERNAL_API_KEY;
   if (!apiKey) return {};
   return { 'X-API-Key': apiKey };
 }

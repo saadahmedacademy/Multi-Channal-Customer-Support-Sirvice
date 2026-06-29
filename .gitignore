@@ -101,6 +101,7 @@ history/
 
 # Generated logs
 .opencode/git-action-log.md
+hf_log.md
 
 # Temporary files
 tmp/

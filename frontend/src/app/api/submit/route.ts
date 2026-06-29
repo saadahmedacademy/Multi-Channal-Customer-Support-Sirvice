@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
 
     const response = await fetch(`${BACKEND_URL}/support/submit`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders(request.cookies) },
       body: JSON.stringify({
         name: body.name,
         email: body.email,

@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react';
 import SupportForm from '@/components/SupportForm';
 import TicketStatus from '@/components/TicketStatus';
 import { useTheme } from '@/components/ThemeProvider';
+import AdminToggle from '@/components/AdminToggle';
 
 const CATEGORY_DESCRIPTIONS = {
   'Technical Support': 'Get help with technical issues, software bugs, integration problems, API errors, and system configurations.',
@@ -48,7 +49,8 @@ export default function Home() {
                 ✨ Get help from our AI-powered support team, available 24/7
               </p>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-3">
+              <AdminToggle />
               <span className="inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold bg-gradient-to-r from-green-400 to-emerald-500 text-white shadow-lg shadow-green-500/50 dark:shadow-green-500/30 transform hover:scale-105 transition-transform">
                 <span className="w-2 h-2 mr-2 bg-white rounded-full animate-pulse"></span>
                 Online

@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
 
     const response = await fetch(`${BACKEND_URL}/customers/link-identifiers`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders(request.cookies) },
       body: JSON.stringify(body),
     });
 

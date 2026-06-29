@@ -23,7 +23,7 @@ export async function GET(
 
     const response = await fetch(`${BACKEND_URL}/support/ticket/${ticketId}`, {
       method: 'GET',
-      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders(request.cookies) },
     });
 
     if (!response.ok) {

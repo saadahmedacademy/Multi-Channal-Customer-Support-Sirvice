@@ -40,7 +40,7 @@ export async function POST(
 
     const response = await fetch(`${BACKEND_URL}/conversations/messages/${messageId}/feedback`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+      headers: { 'Content-Type': 'application/json', ...getAuthHeaders(request.cookies) },
       body: JSON.stringify(body),
     });
 
