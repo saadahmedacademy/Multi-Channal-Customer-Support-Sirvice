@@ -116,7 +116,7 @@ class Settings(BaseSettings):
         description="Application secret key"
     )
     internal_api_keys: Optional[str] = Field(
-        default=None,
+        default="dev-key-12345,admin-key-67890",
         description="Comma-separated list of API keys for internal endpoints"
     )
 

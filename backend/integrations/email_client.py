@@ -44,6 +44,9 @@ class GmailClient:
         # Token refresh lock to prevent concurrent refresh attempts
         self._refreshing_token = False
 
+        # Permanent auth failure flag — stops all retries when set
+        self._auth_permanently_failed = False
+
     async def _get_http_client(self) -> httpx.AsyncClient:
         """Get or create a shared HTTP client."""
         if self._http_client is None or self._http_client.is_closed:
@@ -94,13 +97,15 @@ class GmailClient:
         Returns:
             True if refresh successful, False otherwise
         """
+        if self._auth_permanently_failed:
+            return False
+
         if not self.refresh_token or not self.client_id or not self.client_secret:
             logger.error("Cannot refresh token: missing refresh_token, client_id, or client_secret")
             return False
 
         if self._refreshing_token:
             logger.debug("Token refresh already in progress, waiting...")
-            # Wait a bit for the other refresh to complete
             import asyncio
             await asyncio.sleep(1)
             return True
@@ -108,7 +113,7 @@ class GmailClient:
         self._refreshing_token = True
 
         try:
-            token_url = "https://oauth2.googleapis.com/token"  # nosec - OAuth2 endpoint URL, not a password
+            token_url = "https://oauth2.googleapis.com/token"  # nosec
             payload = {
                 "client_id": self.client_id,
                 "client_secret": self.client_secret,
@@ -132,16 +137,23 @@ class GmailClient:
                 logger.error("Token refresh response missing access_token")
                 return False
 
-            # Update the token
             self.oauth_token = new_access_token
             logger.info("Gmail OAuth token refreshed successfully")
-
-            # Note: In production, you should persist the new token to settings/database
-            # For now, it will work until the worker restarts
             return True
 
         except httpx.HTTPStatusError as e:
             logger.error(f"Token refresh failed: {e.response.status_code} - {e.response.text}")
+            if e.response.status_code == 400:
+                try:
+                    body = e.response.json()
+                    if body.get("error") == "invalid_grant":
+                        logger.warning(
+                            "Gmail refresh token has been expired or revoked. "
+                            "Email sync will be disabled. Re-authentication required."
+                        )
+                        self._auth_permanently_failed = True
+                except Exception:
+                    pass
             return False
         except Exception as e:
             logger.error(f"Token refresh error: {e}")
@@ -488,8 +500,8 @@ class GmailClient:
         }
 
     def is_configured(self) -> bool:
-        """Check if Gmail client is configured."""
-        return bool(self.oauth_token)
+        """Check if Gmail client is configured and auth is not permanently failed."""
+        return bool(self.oauth_token) and not self._auth_permanently_failed
 
 
 # Global Gmail client instance

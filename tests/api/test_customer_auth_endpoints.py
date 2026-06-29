@@ -37,7 +37,7 @@ class TestCustomerLookupEndpoint:
     def test_customer_lookup_without_api_key(self, client):
         """Test customer lookup without API key returns 401."""
         response = client.get("/customers/lookup?email=test@example.com")
-        assert response.status_code == 403  # Forbidden without API key
+        assert response.status_code == 401  # Unauthorized without API key
 
     @pytest.mark.asyncio
     async def test_customer_lookup_with_invalid_api_key(self, client):

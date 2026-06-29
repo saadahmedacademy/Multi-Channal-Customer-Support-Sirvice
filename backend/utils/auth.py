@@ -83,8 +83,8 @@ async def get_api_key(
     if not valid_keys:
         logger.error("No API keys configured in settings")
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="API authentication not configured"
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="API authentication not configured. Set INTERNAL_API_KEYS environment variable."
         )
 
     # Hash the incoming key for comparison

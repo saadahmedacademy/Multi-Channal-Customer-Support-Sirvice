@@ -158,15 +158,50 @@ async def sync_gmail_emails(max_results: int = 10) -> int:
 
 async def periodic_email_sync(stop_event: asyncio.Event) -> None:
     """Periodically check for new support emails."""
+    consecutive_failures = 0
+
     while not stop_event.is_set():
+        if not gmail_client.is_configured():
+            if consecutive_failures == 0:
+                logger.warning("Gmail not configured — email sync disabled")
+            consecutive_failures += 1
+            if consecutive_failures >= 12:
+                logger.warning("Gmail sync stopped after 12 consecutive failures — re-authentication required")
+                break
+            try:
+                await asyncio.wait_for(
+                    asyncio.get_event_loop().create_future(),
+                    timeout=EMAIL_SYNC_INTERVAL,
+                )
+            except asyncio.TimeoutError:
+                pass
+            except (asyncio.CancelledError, Exception):
+                break
+            continue
+
+        consecutive_failures = 0
+
         try:
-            await sync_gmail_emails()
+            result = await sync_gmail_emails()
+            if result == 0:
+                consecutive_failures += 1
+            else:
+                consecutive_failures = 0
         except Exception as e:
             logger.error(f"Periodic email sync failed: {e}")
+            consecutive_failures += 1
+
+        if consecutive_failures >= 12:
+            logger.warning(
+                "Gmail sync stopped after 12 consecutive failures. "
+                "Set DISABLE_EMAIL_SYNC=1 to suppress, or reconfigure credentials."
+            )
+            break
+
         try:
             await asyncio.wait_for(
                 asyncio.get_event_loop().create_future(),
-                timeout=EMAIL_SYNC_INTERVAL,
+                timeout=min(EMAIL_SYNC_INTERVAL * (2 ** (consecutive_failures // 3)), 600),
             )
         except asyncio.TimeoutError:
             pass
