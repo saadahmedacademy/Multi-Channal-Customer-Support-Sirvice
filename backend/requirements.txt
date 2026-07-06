@@ -21,7 +21,7 @@ httpx>=0.28.1
 aiohttp==3.11.12
 
 # Hugging Face Inference
-huggingface_hub==0.29.3
+huggingface_hub==1.22.0
 
 # Environment
 python-dotenv==1.2.2
