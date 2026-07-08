@@ -2,7 +2,7 @@
 
 > Multi-channel AI-powered customer support with web form, WhatsApp, and email · Backend: FastAPI · Frontend: Next.js 16 · DB: PostgreSQL (Supabase) · AI: OpenRouter → Gemini → Hugging Face
 
-Scanned: 2026-06-26
+Scanned: 2026-07-08
 
 ## Architecture
 User → Web Form / WhatsApp / Email → FastAPI → Async Queue → AI Agent → Response (↕ PostgreSQL via Supabase)
@@ -22,15 +22,15 @@ User → Web Form / WhatsApp / Email → FastAPI → Async Queue → AI Agent �
 | Path | Role |
 |------|------|
 | backend/api/main.py | FastAPI app + lifespan + middleware + route registration |
-| backend/api/routes/ | 8 route modules — web_form, tickets, whatsapp, email, customers, customer_linking, conversations, metrics |
-| backend/config/settings.py | Pydantic settings (31 env vars) |
+| backend/api/routes/ | 9 route modules — conversations, customer_linking, customers, email, health, metrics, tickets, web_form, whatsapp |
+| backend/config/settings.py | Pydantic settings (31 env vars via Field) |
 | backend/db/connection.py | asyncpg pool manager |
 | backend/db/repositories/ | 6 repos — conversation, customer, customer_identifier, knowledge, message, ticket |
 | backend/integrations/ | 3 clients — email_client, queue_client, whatsapp_client |
 | backend/worker/ | 5 modules — ai_agent, escalation, message_processor, sentiment, ticket_service |
 | backend/hf_main.py | HF Spaces unified entry (app + worker + email sync, QUEUE_MODE=local) |
 | backend/api/middleware/ | 4 middleware — error_handler, performance, rate_limiter, security_headers |
-| frontend/src/app/ | Next.js App Router (5 pages, 6 API route dirs) |
+| frontend/src/app/ | Next.js App Router (6 page dirs — admin, customers, privacy, terms, ticket; api/ has sub-routes) |
 | database/schema.sql | Full DDL (including pgvector) |
 | .github/workflows/ | 4 workflows — build, security, sync-to-hub, test |
 
@@ -52,5 +52,5 @@ User → Web Form / WhatsApp / Email → FastAPI → Async Queue → AI Agent �
 ## Deploy Targets
 | Target | URL |
 |--------|-----|
-| HF Spaces | Docker-based unified backend (hf_main.py) |
+| HF Spaces | Docker-based unified backend (hf_main.py) — saadi786/ai-customer-support |
 | Vercel | https://multi-channal-customer-support-sirv.vercel.app |

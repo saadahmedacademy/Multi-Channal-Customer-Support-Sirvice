@@ -1,3 +1,29 @@
+# Session State — 2026-07-08
+
+## Current Task
+Bump recharts 3.9.0 → 3.9.2 in frontend/package.json
+
+## Active Decisions
+- **Pyramid disclosure**: TL;DR at top (3-5 lines), progressive detail below — agents stop at TL;DR for 80% of queries
+- **Cache-friendly layout**: Stable sections (architecture, stack, conventions) at top; dynamic sections (state, commits) at bottom
+- **Navigation heuristics** over exhaustive lists — teach agents *how* to find routes/env vars instead of enumerating them
+- **File split**: `context.md` = project structure (rare changes, full replace), `state.md` = session tracking (append, prune to 3 sessions)
+
+## Blockers
+None
+
+## Recent Changes
+- `frontend/package.json` — recharts ^3.9.0 → ^3.9.2
+- `.opencode/context.md` — rescan + rebuild (2026-07-08)
+- `.opencode/state.md` — new session entry
+
+## Next Steps
+1. Run `.opencode/context.md` through lint — verify < 100 lines / ~1,500 tokens
+2. Add `/sp.context` command to CLI if not already present
+3. On next structural change (new routes, deps, dirs), re-run scan via `/sp.context`
+
+---
+
 # Session State — 2026-06-26
 
 ## Current Task
@@ -15,39 +41,12 @@ Admin mode toggle + API key routing + admin dashboard — testing complete
 ## Blockers
 None
 
-## Test Results
-| Test | Result |
-|------|--------|
-| Ticket endpoint without key → 401 | ✅ |
-| Ticket endpoint with valid dev-key → 404 (key accepted) | ✅ |
-| Ticket endpoint with valid admin-key → 404 (key accepted) | ✅ |
-| Ticket endpoint with invalid key → 403 | ✅ |
-| Health endpoint (public) → 200 | ✅ |
-| Metrics endpoint without key → 401 | ✅ |
-| Metrics endpoint with admin-key → 200 | ✅ |
-| Auth check (no cookie) → `{keyPresent:false, isAdmin:false}` | ✅ |
-| Set-key with valid admin-key → `{valid:true, isAdmin:true}` | ✅ |
-| Set-key with invalid key → HTTP 401 | ✅ |
-| Set-key with dev-key (valid, not admin) → `{valid:true, isAdmin:false}` | ✅ |
-| Clear-key → cookie cleared | ✅ |
-| Admin dashboard proxy (metrics) → HTTP 200 | ✅ |
-| Admin page with admin cookie → HTTP 200 | ✅ |
-| Admin page without cookie → HTTP 307 redirect | ✅ |
-
 ## Recent Changes
-- `backend/api/routes/tickets.py` — Restored `Depends(get_api_key)` on `GET /support/ticket/{id}` (auth required, key sent by frontend proxy)
-- `frontend/.env.local` — Added `INTERNAL_API_KEY=dev-key-12345` and `ADMIN_API_KEY=admin-key-67890`
-- `frontend/src/lib/api-utils.ts` — `getAuthHeaders()` now accepts optional cookie store; reads `admin-api-key` cookie first, falls back to env var
-- `frontend/src/app/api/auth/` — Created `set-key`, `clear-key`, `check` routes for admin key management
-- `frontend/src/lib/auth-context.tsx` — React context for admin state (`isAdmin`, `enableAdmin`, `disableAdmin`)
-- `frontend/src/components/AdminToggle.tsx` — Toggle switch + glassmorphism API key input modal
-- `frontend/src/app/page.tsx` — Added AdminToggle to header
-- `frontend/src/app/layout.tsx` — Wrapped with AuthProvider
-- `frontend/src/middleware.ts` — Server-side protection for `/admin/*` (redirects to `/` if no admin cookie)
-- `frontend/src/app/admin/page.tsx` — Admin dashboard with recharts (StatsCards, TicketTrendChart, ChannelDistribution, status bars, response times)
-- `frontend/src/app/api/admin/` — Proxy routes for `/metrics/channels` and `/metrics/tickets/summary`
-- `frontend/src/components/admin/` — StatsCards, TicketTrendChart, ChannelDistribution components
-- All 5 frontend API proxy routes updated to pass `request.cookies` to `getAuthHeaders()`
+- `backend/api/routes/tickets.py` — Restored `Depends(get_api_key)` on `GET /support/ticket/{id}`
+- `frontend/src/lib/api-utils.ts` — `getAuthHeaders()` with cookie store support
+- `frontend/src/app/api/auth/` — `set-key`, `clear-key`, `check` routes for admin key management
+- `frontend/src/lib/auth-context.tsx` — React context for admin state
+- `frontend/src/components/AdminToggle.tsx` — Toggle switch + key input modal
 
 ## Next Steps
 1. Test flow: normal user submits ticket + checks status (dev-key used, works)
@@ -64,10 +63,10 @@ None
 Fix GitHub Actions security scan: upgrade vulnerable deps, pin action versions, suppress bandit FPs
 
 ## Active Decisions
-- **Web form session isolation**: Removed `get_active_by_customer` reuse — every web form submission starts a new session. Follow-ups via chat bar stay within that session.
-- **Per-message feedback** instead of ticket-level survey: thumbs up/down stored on individual messages, not a separate table
-- **Multi-turn conversations**: tickets stay `in_progress` after AI response (not auto-resolved); follow-up messages trigger AI with full history
-- **WhatsApp/Email**: feedback prompt appended to response text (emojis), detected on reply → saved to latest agent message
+- **Web form session isolation**: Removed `get_active_by_customer` reuse — every web form submission starts a new session
+- **Per-message feedback** instead of ticket-level survey
+- **Multi-turn conversations**: tickets stay `in_progress` after AI response (not auto-resolved)
+- **WhatsApp/Email**: feedback prompt appended to response text (emojis)
 - **Web frontend**: interactive thumbs up/down buttons + chat input bar for follow-up
 - Thumbs down opens inline input asking "What went wrong?"
 
@@ -75,10 +74,10 @@ Fix GitHub Actions security scan: upgrade vulnerable deps, pin action versions, 
 None
 
 ## Recent Changes
-- `backend/requirements.txt` — Upgraded aiohttp≥3.14.0, fastapi≥0.135.0, python-multipart≥0.0.31, bleach≥6.4.0, pydantic≥2.5.3 to fix 16+ CVEs
-- `.github/workflows/security.yml` — Pinned trufflehog@v3.82.12 & trivy-action@0.29.0; dropped bandit[toml] extra
-- `backend/hf_main.py` — Added # nosec to suppress bandit B104 (expected 0.0.0.0 bind)
-- `backend/integrations/email_client.py` — Added # nosec to suppress bandit B105 (Google OAuth URL)
+- `backend/requirements.txt` — Upgraded deps to fix 16+ CVEs
+- `.github/workflows/security.yml` — Pinned trufflehog & trivy-action
+- `backend/hf_main.py` — Added # nosec to suppress bandit B104
+- `backend/integrations/email_client.py` — Added # nosec to suppress bandit B105
 - `AGENTS.md` — Added rule: activate .venv before installing packages
 
 ## Next Steps
