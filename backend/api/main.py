@@ -134,7 +134,7 @@ async def health_check():
 
     # Check AI API (lightweight check)
     ai_status = "configured"
-    if not settings.openrouter_api_key and not settings.gemini_api_key:
+    if not settings.huggingface_api_key:
         ai_status = "no API key configured"
 
     return {

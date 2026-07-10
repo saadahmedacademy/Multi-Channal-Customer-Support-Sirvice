@@ -27,8 +27,7 @@ class TestAIAgent:
     def ai_agent(self):
         """Create AI agent instance for testing."""
         with patch('backend.worker.ai_agent.settings') as mock_settings:
-            mock_settings.openrouter_api_key = None
-            mock_settings.gemini_api_key = None
+            mock_settings.huggingface_api_key = None
             mock_settings.ai_timeout = 30
             mock_settings.max_tokens = 500
             agent = AIAgent()
@@ -62,9 +61,9 @@ class TestAIAgent:
         """Test system prompt generation."""
         prompt = ai_agent._get_system_prompt("web_form")
         
-        assert "helpful AI customer support agent" in prompt
+        assert "friendly customer support assistant" in prompt
         assert "professional and helpful" in prompt
-        assert "Thank you for contacting support" in prompt
+        assert "Thank you for contacting our AI Support Center" in prompt
 
     @pytest.mark.unit
     def test_get_system_prompt_with_knowledge(self, ai_agent):

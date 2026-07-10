@@ -33,8 +33,8 @@ class TestResponseGeneration:
     @pytest.mark.asyncio
     async def test_generate_response_basic(self, ai_agent):
         """Test basic response generation."""
-        with patch.object(ai_agent, '_call_openrouter', new=AsyncMock(return_value=("Thank you for contacting support. I can help you with that.", 10))), \
-             patch.object(ai_agent, 'openrouter_api_key', "test-key"):
+        with patch.object(ai_agent, '_call_huggingface', new=AsyncMock(return_value=("Thank you for contacting support. I can help you with that.", 10))), \
+             patch.object(ai_agent, 'huggingface_api_key', "test-key"):
             response, tokens, confidence = await ai_agent.generate_response(
                 message="I need help with my account",
                 channel="web_form",
@@ -53,8 +53,8 @@ class TestResponseGeneration:
             {"role": "user", "content": "My account is locked"},
         ]
 
-        with patch.object(ai_agent, '_call_openrouter', new=AsyncMock(return_value=("I'll help you unlock your account.", 10))), \
-             patch.object(ai_agent, 'openrouter_api_key', "test-key"):
+        with patch.object(ai_agent, '_call_huggingface', new=AsyncMock(return_value=("I'll help you unlock your account.", 10))), \
+             patch.object(ai_agent, 'huggingface_api_key', "test-key"):
             response, tokens, confidence = await ai_agent.generate_response(
                 message="Can you help me?",
                 channel="web_form",
@@ -65,12 +65,8 @@ class TestResponseGeneration:
     @pytest.mark.asyncio
     async def test_generate_response_handles_api_errors(self, ai_agent):
         """Test that API errors are handled gracefully."""
-        with patch.object(ai_agent, '_call_openrouter', new=AsyncMock(return_value=(None, 0))), \
-             patch.object(ai_agent, 'openrouter_api_key', "test-key"), \
-             patch.object(ai_agent, '_call_huggingface', new=AsyncMock(return_value=(None, 0))), \
-             patch.object(ai_agent, 'huggingface_api_key', "test-key"), \
-             patch.object(ai_agent, '_call_gemini', new=AsyncMock(return_value=(None, 0))), \
-             patch.object(ai_agent, 'gemini_api_key', "test-key"):
+        with patch.object(ai_agent, '_call_huggingface', new=AsyncMock(return_value=(None, 0))), \
+             patch.object(ai_agent, 'huggingface_api_key', "test-key"):
             response, tokens, confidence = await ai_agent.generate_response(
                 message="Test message",
                 channel="web_form",
@@ -110,8 +106,8 @@ class TestErrorHandling:
     @pytest.mark.asyncio
     async def test_handles_empty_message(self, ai_agent):
         """Test handling of empty message."""
-        with patch.object(ai_agent, '_call_openrouter', new=AsyncMock(return_value=("How can I help you today?", 5))), \
-             patch.object(ai_agent, 'openrouter_api_key', "test-key"):
+        with patch.object(ai_agent, '_call_huggingface', new=AsyncMock(return_value=("How can I help you today?", 5))), \
+             patch.object(ai_agent, 'huggingface_api_key', "test-key"):
             response, tokens, confidence = await ai_agent.generate_response(
                 message="",
                 channel="web_form",
@@ -124,31 +120,14 @@ class TestErrorHandling:
         """Test handling of very long message."""
         long_message = "test " * 1000
 
-        with patch.object(ai_agent, '_call_openrouter', new=AsyncMock(return_value=("I understand your concern.", 5))), \
-             patch.object(ai_agent, 'openrouter_api_key', "test-key"):
+        with patch.object(ai_agent, '_call_huggingface', new=AsyncMock(return_value=("I understand your concern.", 5))), \
+             patch.object(ai_agent, 'huggingface_api_key', "test-key"):
             response, tokens, confidence = await ai_agent.generate_response(
                 message=long_message,
                 channel="web_form",
                 conversation_history=[]
             )
             assert response is not None
-
-    @pytest.mark.asyncio
-    async def test_generate_response_fallback_chain(self, ai_agent):
-        """Test that fallback chain works (OpenRouter -> HF -> Gemini)."""
-        with patch.object(ai_agent, 'openrouter_api_key', "test-key"), \
-             patch.object(ai_agent, 'huggingface_api_key', "test-key"), \
-             patch.object(ai_agent, 'gemini_api_key', "test-key"), \
-             patch.object(ai_agent, '_call_openrouter', new=AsyncMock(return_value=(None, 0))), \
-             patch.object(ai_agent, '_call_huggingface', new=AsyncMock(return_value=(None, 0))), \
-             patch.object(ai_agent, '_call_gemini', new=AsyncMock(return_value=("Gemini response", 10))):
-            response, tokens, confidence = await ai_agent.generate_response(
-                message="Test",
-                channel="web_form",
-                conversation_history=[]
-            )
-            assert response == "Gemini response"
-            assert tokens == 10
 
 
 class TestPerformance:
@@ -159,8 +138,8 @@ class TestPerformance:
         """Test that AI agent can handle concurrent requests."""
         import asyncio
 
-        with patch.object(ai_agent, '_call_openrouter', new=AsyncMock(return_value=("Response", 5))), \
-             patch.object(ai_agent, 'openrouter_api_key', "test-key"):
+        with patch.object(ai_agent, '_call_huggingface', new=AsyncMock(return_value=("Response", 5))), \
+             patch.object(ai_agent, 'huggingface_api_key', "test-key"):
             tasks = [
                 ai_agent.generate_response(f"Message {i}", "web_form", [])
                 for i in range(5)

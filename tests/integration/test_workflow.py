@@ -150,8 +150,7 @@ class TestAIIntegration:
         from backend.worker.ai_agent import AIAgent
         
         with patch('backend.worker.ai_agent.settings') as mock_settings:
-            mock_settings.openrouter_api_key = None
-            mock_settings.gemini_api_key = None
+            mock_settings.huggingface_api_key = None
             mock_settings.ai_timeout = 30
             mock_settings.max_tokens = 500
             

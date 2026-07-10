@@ -4,10 +4,7 @@
 
 Your AI Customer Support Agent now supports **Hugging Face Inference API** as an AI provider option!
 
-**Priority Order**:
-1. OpenRouter (primary)
-2. **Hugging Face** (fallback 1) ✨ NEW
-3. Google Gemini (fallback 2)
+**Hugging Face Inference API** is the sole AI provider.
 
 ---
 
@@ -39,9 +36,8 @@ Your AI Customer Support Agent now supports **Hugging Face Inference API** as an
 
 | Model | Quality | Speed | Best For |
 |-------|---------|-------|----------|
-| **mistralai/Mixtral-8x7B-Instruct-v0.1** | ⭐⭐⭐⭐⭐ | Medium | General support (DEFAULT) |
-| **meta-llama/Meta-Llama-3-8B-Instruct** | ⭐⭐⭐⭐ | Fast | Quick responses |
-| **HuggingFaceH4/zephyr-7b-beta** | ⭐⭐⭐⭐ | Fast | Conversational |
+| **NousResearch/Hermes-3-Llama-3.1-8B** | ⭐⭐⭐⭐⭐ | Medium | General support (DEFAULT) |
+| **Qwen/Qwen2.5-7B-Instruct** | ⭐⭐⭐⭐ | Fast | Quick responses |
 | **microsoft/Phi-3-mini-4k-instruct** | ⭐⭐⭐ | Very Fast | Simple queries |
 
 ### **Model Selection Criteria**:
@@ -63,13 +59,9 @@ cp .env.example .env
 
 Edit `.env`:
 ```bash
-# Hugging Face (Free AI Alternative)
+# Hugging Face (AI Provider)
 HUGGINGFACE_API_KEY=hf_your-actual-token-here
-HUGGINGFACE_MODEL=mistralai/Mixtral-8x7B-Instruct-v0.1
-
-# Optional: Disable other AI providers (to test Hugging Face only)
-# OPENROUTER_API_KEY=
-# GEMINI_API_KEY=
+HUGGINGFACE_MODEL=NousResearch/Hermes-3-Llama-3.1-8B
 ```
 
 ### **Step 2: Verify Configuration**
@@ -144,52 +136,9 @@ python backend/worker/message_processor.py
 
 ---
 
-## **5️⃣ USE HUGGING FACE AS PRIMARY AI**
+## **5️⃣ HUGGING FACE IS THE ONLY AI PROVIDER**
 
-If you want to use **only Hugging Face** (no OpenRouter/Gemini):
-
-### **Option A: Comment Out Other Keys**
-
-In `.env`:
-```bash
-# Leave these empty or commented
-OPENROUTER_API_KEY=
-GEMINI_API_KEY=
-
-# Only configure Hugging Face
-HUGGINGFACE_API_KEY=hf_your-token
-HUGGINGFACE_MODEL=mistralai/Mixtral-8x7B-Instruct-v0.1
-```
-
-### **Option B: Change Priority in Code**
-
-Edit `backend/worker/ai_agent.py`:
-
-```python
-async def generate_response(self, ...):
-    # ...
-    try:
-        # Try Hugging Face FIRST
-        if self.huggingface_api_key:
-            response, tokens = await self._call_huggingface(messages)
-            if response:
-                return response, tokens, 0.85
-
-        # Then OpenRouter
-        if self.openrouter_api_key:
-            response, tokens = await self._call_openrouter(messages)
-            if response:
-                return response, tokens, 0.9
-
-        # Then Gemini
-        if self.gemini_api_key:
-            response, tokens = await self._call_gemini(message, conversation_history)
-            if response:
-                return response, tokens, 0.8
-
-        # Fallback
-        return self._get_fallback_response(channel), 0, None
-```
+Hugging Face is the sole AI provider. No OpenRouter or Gemini configuration needed.
 
 ---
 
@@ -258,14 +207,13 @@ if content.startswith(prompt[-50:]):
 
 ## **7️⃣ COMPARE AI PROVIDERS**
 
-| Feature | OpenRouter | Hugging Face | Gemini |
-|---------|-----------|--------------|--------|
-| **Free Tier** | ✅ Yes (some models) | ✅ 30k tokens/month | ✅ Yes (limited) |
-| **Setup** | Easy | Easy | Easy |
-| **Speed** | Fast | Medium | Fast |
-| **Quality** | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐ | ⭐⭐⭐⭐ |
-| **Models** | 100+ | 100,000+ | 1 (Gemini) |
-| **Best For** | Production | Testing/Backup | Backup |
+| Feature | Hugging Face |
+|---------|--------------|
+| **Free Tier** | ✅ 30k tokens/month |
+| **Setup** | Easy |
+| **Speed** | Medium |
+| **Quality** | ⭐⭐⭐⭐ |
+| **Models** | 100,000+ |
 
 ---
 
@@ -370,7 +318,7 @@ curl -X POST http://localhost:8000/support/submit \
 1. **Use Instruct Models**: Always choose models with "Instruct" or "Chat" in the name
 2. **Test Multiple Models**: Try different models to find the best fit
 3. **Monitor Rate Limits**: Free tier has monthly limits
-4. **Have Fallback**: Keep OpenRouter/Gemini as backup
+4. **Multiple Models**: Configure fallback models in settings
 5. **Optimize Prompts**: Shorter prompts = faster responses
 6. **Cache Common Responses**: Reduce API calls for FAQs
 

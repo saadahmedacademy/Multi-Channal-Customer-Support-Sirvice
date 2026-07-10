@@ -135,7 +135,7 @@ class TestHealthEndpoint:
             mock_queue.producer = MagicMock()
 
             # Mock settings
-            mock_settings.openrouter_api_key = "test-key"
+            mock_settings.huggingface_api_key = "test-key"
             mock_settings.meta_whatsapp_token = "test-token"
             mock_settings.meta_whatsapp_phone_id = "test-phone-id"
             mock_settings.gmail_oauth_token = "test-oauth"
@@ -161,7 +161,7 @@ class TestHealthEndpoint:
             mock_db.acquire.return_value.__aenter__.return_value = mock_conn
 
             mock_queue.producer = MagicMock()
-            mock_settings.openrouter_api_key = "test-key"
+            mock_settings.huggingface_api_key = "test-key"
 
             response = client.get("/health")
 
@@ -219,7 +219,7 @@ class TestRateLimiting:
             mock_conn.fetchval = AsyncMock(return_value=1)
             mock_db.acquire.return_value.__aenter__.return_value = mock_conn
             mock_queue.producer = MagicMock()
-            mock_settings.openrouter_api_key = "test-key"
+            mock_settings.huggingface_api_key = "test-key"
 
             # Make many requests to health endpoint
             for i in range(20):

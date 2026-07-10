@@ -198,24 +198,21 @@ class TestAPIFailureHandling:
 
     @pytest.mark.asyncio
     @pytest.mark.unit
-    async def test_ai_fallback_when_all_apis_fail(self):
-        """Test fallback response when all AI APIs are unavailable."""
+    async def test_ai_fallback_when_no_api_key(self):
+        """Test fallback response when Hugging Face API key is not set."""
         from backend.worker.ai_agent import AIAgent
-        
+
         with patch('backend.worker.ai_agent.settings') as mock_settings:
-            mock_settings.openrouter_api_key = None
             mock_settings.huggingface_api_key = None
-            mock_settings.gemini_api_key = None
             mock_settings.ai_timeout = 5
             mock_settings.max_tokens = 500
-            
+
             agent = AIAgent()
             response, tokens, confidence = await agent.generate_response(
                 message="I need help",
                 channel="web_form"
             )
-            
-            # Should return fallback response
+
             assert response is not None
             assert len(response) > 0
             assert "human agent" in response.lower()
@@ -227,21 +224,18 @@ class TestAPIFailureHandling:
     async def test_ai_fallback_for_whatsapp_channel(self):
         """Test fallback response is channel-appropriate for WhatsApp."""
         from backend.worker.ai_agent import AIAgent
-        
+
         with patch('backend.worker.ai_agent.settings') as mock_settings:
-            mock_settings.openrouter_api_key = None
             mock_settings.huggingface_api_key = None
-            mock_settings.gemini_api_key = None
             mock_settings.ai_timeout = 5
             mock_settings.max_tokens = 500
-            
+
             agent = AIAgent()
             response, tokens, confidence = await agent.generate_response(
                 message="Help",
                 channel="whatsapp"
             )
-            
-            # WhatsApp fallback should be shorter and more conversational
+
             assert "Hi!" in response
             assert "human agent" in response
 

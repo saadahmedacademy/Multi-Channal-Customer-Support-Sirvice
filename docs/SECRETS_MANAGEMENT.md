@@ -30,7 +30,7 @@ This guide covers how to securely manage secrets and sensitive configuration for
 - **Access**: Backend API, Worker only
 
 ### API Keys
-- **OpenRouter/Gemini**: AI model access
+- **Hugging Face**: AI model access
 - **WhatsApp**: Meta Cloud API token
 - **Gmail**: OAuth credentials
 - **Internal**: API key for protected endpoints
@@ -51,7 +51,7 @@ This guide covers how to securely manage secrets and sensitive configuration for
 ```bash
 # .env file (never commit)
 DATABASE_URL=postgresql://...
-OPENROUTER_API_KEY=sk-or-...
+HUGGINGFACE_API_KEY=hf_...
 ```
 
 ### Option 2: Docker Secrets

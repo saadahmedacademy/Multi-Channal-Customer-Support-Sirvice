@@ -1,6 +1,6 @@
 # AI Customer Support Agent
 
-> Multi-channel AI-powered customer support with web form, WhatsApp, and email · Backend: FastAPI · Frontend: Next.js 16 · DB: PostgreSQL (Supabase) · AI: OpenRouter → Gemini → Hugging Face
+> Multi-channel AI-powered customer support with web form, WhatsApp, and email · Backend: FastAPI · Frontend: Next.js 16 · DB: PostgreSQL (Supabase) · AI: Hugging Face Inference
 
 Scanned: 2026-07-08
 
@@ -14,7 +14,7 @@ User → Web Form / WhatsApp / Email → FastAPI → Async Queue → AI Agent �
 | Frontend | Next.js 16 + React 19 + Tailwind CSS 4 |
 | Database | PostgreSQL (asyncpg) via Supabase |
 | Queue | Redpanda / in-process async fallback (HF Spaces) |
-| AI | OpenRouter (primary) → Gemini API → Hugging Face Inference |
+| AI | Hugging Face Inference API |
 | Email | Gmail API (OAuth2 + service account) |
 | WhatsApp | Meta Cloud API webhook |
 
@@ -46,7 +46,7 @@ User → Web Form / WhatsApp / Email → FastAPI → Async Queue → AI Agent �
 - Input sanitization via bleach for user-generated content
 - Exception handling via `register_exception_handlers` middleware
 - Internal API routes require `X-API-Key` header (`internal_api_keys`)
-- AI fallback chain: OpenRouter → Gemini → Hugging Face
+- AI provider: Hugging Face Inference API (single provider)
 - CI/CD via GitHub Actions (build, test, security scan, sync to HF Hub)
 
 ## Deploy Targets

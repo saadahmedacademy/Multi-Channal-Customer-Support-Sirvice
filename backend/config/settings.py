@@ -34,21 +34,13 @@ class Settings(BaseSettings):
         description="Supabase anon key"
     )
 
-    # AI API
-    openrouter_api_key: Optional[str] = Field(
-        default=None,
-        description="OpenRouter API key"
-    )
-    gemini_api_key: Optional[str] = Field(
-        default=None,
-        description="Google Gemini API key"
-    )
+    # AI API (Hugging Face)
     huggingface_api_key: Optional[str] = Field(
         default=None,
         description="Hugging Face API key"
     )
     huggingface_model: Optional[str] = Field(
-        default="meta-llama/Meta-Llama-3-8B-Instruct",
+        default="NousResearch/Hermes-3-Llama-3.1-8B",
         description="Hugging Face model to use"
     )
 
@@ -137,10 +129,6 @@ class Settings(BaseSettings):
     )
 
     # AI settings
-    ai_model: str = Field(
-        default="meta-llama/llama-3.3-70b-instruct:free",
-        description="AI model to use (OpenRouter model string)"
-    )
     ai_timeout: int = Field(
         default=30,
         description="AI API timeout in seconds"
@@ -160,17 +148,17 @@ class Settings(BaseSettings):
         env_file = ENV_FILE_PATH
         case_sensitive = False
         extra = "ignore"  # Ignore extra fields in .env
-    
+
     @property
     def is_development(self) -> bool:
         """Check if running in development environment."""
         return self.environment.lower() == "development"
-    
+
     @property
     def is_production(self) -> bool:
         """Check if running in production environment."""
         return self.environment.lower() == "production"
-    
+
     def validate(self) -> None:
         """Validate required settings."""
         if not self.database_url:
@@ -182,8 +170,8 @@ class Settings(BaseSettings):
             if not self.internal_api_keys:
                 raise ValueError("INTERNAL_API_KEYS is required in production")
 
-        if not self.openrouter_api_key and not self.gemini_api_key:
-            raise ValueError("Either OPENROUTER_API_KEY or GEMINI_API_KEY is required")
+        if not self.huggingface_api_key:
+            raise ValueError("HUGGINGFACE_API_KEY is required")
 
 
 # Global settings instance

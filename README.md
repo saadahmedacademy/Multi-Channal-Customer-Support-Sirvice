@@ -23,7 +23,7 @@ User → Web Form / WhatsApp / Email → FastAPI → Async Queue → AI Agent �
 - **Backend**: Python FastAPI with async message processing
 - **Frontend**: Next.js 16 with App Router (Vercel)
 - **Database**: Supabase PostgreSQL
-- **AI**: OpenRouter (primary) → Hugging Face Inference (fallback)
+- **AI**: Hugging Face Inference API
 - **Queue**: In-process async queue (HF Spaces) / Redpanda (local dev)
 - **Email**: Gmail API with OAuth 2.0 + label-based sync
 - **WhatsApp**: Meta Cloud API webhook
@@ -83,8 +83,8 @@ cd frontend && npm run dev
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `DATABASE_URL` | Yes | Supabase PostgreSQL connection string |
-| `OPENROUTER_API_KEY` | Yes | OpenRouter API key for AI |
-| `HUGGINGFACE_API_KEY` | No | Fallback AI when OpenRouter is rate-limited |
+| `HUGGINGFACE_API_KEY` | Yes | Hugging Face API key for AI |
+| `HUGGINGFACE_MODEL` | No | Hugging Face model ID (default: NousResearch/Hermes-3-Llama-3.1-8B) |
 | `GMAIL_CLIENT_ID` | For email | Google OAuth client ID |
 | `GMAIL_CLIENT_SECRET` | For email | Google OAuth client secret |
 | `GMAIL_REFRESH_TOKEN` | For email | OAuth refresh token |

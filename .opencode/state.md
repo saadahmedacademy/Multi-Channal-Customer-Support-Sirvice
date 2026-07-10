@@ -1,7 +1,7 @@
 # Session State — 2026-07-08
 
 ## Current Task
-Bump recharts 3.9.0 → 3.9.2 in frontend/package.json
+Strip OpenRouter/Gemini — Hugging Face only AI provider
 
 ## Active Decisions
 - **Pyramid disclosure**: TL;DR at top (3-5 lines), progressive detail below — agents stop at TL;DR for 80% of queries
@@ -13,9 +13,12 @@ Bump recharts 3.9.0 → 3.9.2 in frontend/package.json
 None
 
 ## Recent Changes
-- `frontend/package.json` — recharts ^3.9.0 → ^3.9.2
-- `.opencode/context.md` — rescan + rebuild (2026-07-08)
-- `.opencode/state.md` — new session entry
+- `backend/worker/ai_agent.py` — stripped OpenRouter/Gemini, HF-only with model fallback list
+- `backend/config/settings.py` — removed openrouter_api_key, gemini_api_key, ai_model fields
+- `backend/api/main.py` — health check uses huggingface_api_key only
+- `docker-compose.yml`, `docker-compose.staging.yml` — removed OpenRouter/Gemini env vars
+- `.env`, `README.md`, `AGENT.md`, `docs/*`, `.opencode/context.md` — updated references
+- `tests/` — all 6 test files updated; 85/85 pass
 
 ## Next Steps
 1. Run `.opencode/context.md` through lint — verify < 100 lines / ~1,500 tokens

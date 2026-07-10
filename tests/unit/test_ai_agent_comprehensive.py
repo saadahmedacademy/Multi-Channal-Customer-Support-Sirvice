@@ -90,129 +90,7 @@ class TestSystemPromptGeneration:
         assert "800 characters" in prompt
 
 
-class TestOpenRouterAPI:
-    """Test OpenRouter API integration."""
 
-    @pytest.mark.asyncio
-    async def test_call_openrouter_success(self, ai_agent):
-        """Test successful OpenRouter API call."""
-        with patch.object(ai_agent, '_get_http_client') as mock_client:
-            mock_response = MagicMock()
-            mock_response.json.return_value = {
-                "choices": [{
-                    "message": {"content": "Test response"}
-                }],
-                "usage": {"total_tokens": 50}
-            }
-            mock_response.raise_for_status = MagicMock()
-
-            mock_http = AsyncMock()
-            mock_http.post = AsyncMock(return_value=mock_response)
-            mock_http.__aenter__ = AsyncMock(return_value=mock_http)
-            mock_http.__aexit__ = AsyncMock()
-            mock_client.return_value = mock_http
-
-            messages = [{"role": "user", "content": "Hello"}]
-            response, tokens = await ai_agent._call_openrouter(messages)
-
-            assert response == "Test response"
-            assert tokens == 50
-
-    @pytest.mark.asyncio
-    async def test_call_openrouter_no_api_key(self, ai_agent):
-        """Test OpenRouter call without API key."""
-        ai_agent.openrouter_api_key = None
-        messages = [{"role": "user", "content": "Hello"}]
-        response, tokens = await ai_agent._call_openrouter(messages)
-
-        assert response is None
-        assert tokens == 0
-
-    @pytest.mark.asyncio
-    async def test_call_openrouter_http_error(self, ai_agent):
-        """Test OpenRouter API HTTP error handling."""
-        with patch.object(ai_agent, '_get_http_client') as mock_client:
-            mock_http = AsyncMock()
-            mock_http.post = AsyncMock(side_effect=httpx.HTTPError("API Error"))
-            mock_http.__aenter__ = AsyncMock(return_value=mock_http)
-            mock_http.__aexit__ = AsyncMock()
-            mock_client.return_value = mock_http
-
-            messages = [{"role": "user", "content": "Hello"}]
-            response, tokens = await ai_agent._call_openrouter(messages)
-
-            assert response is None
-            assert tokens == 0
-
-
-class TestGeminiAPI:
-    """Test Gemini API integration."""
-
-    @pytest.mark.asyncio
-    async def test_call_gemini_success(self, ai_agent):
-        """Test successful Gemini API call."""
-        ai_agent.gemini_api_key = "test_key"  # Set API key
-
-        with patch.object(ai_agent, '_get_http_client') as mock_client:
-            mock_response = MagicMock()
-            mock_response.json.return_value = {
-                "candidates": [{
-                    "content": {
-                        "parts": [{"text": "Gemini response"}]
-                    }
-                }]
-            }
-            mock_response.raise_for_status = MagicMock()
-
-            mock_http = AsyncMock()
-            mock_http.post = AsyncMock(return_value=mock_response)
-            mock_http.__aenter__ = AsyncMock(return_value=mock_http)
-            mock_http.__aexit__ = AsyncMock()
-            mock_client.return_value = mock_http
-
-            response, tokens = await ai_agent._call_gemini("Hello", [])
-
-            assert response == "Gemini response"
-            assert tokens > 0
-
-    @pytest.mark.asyncio
-    async def test_call_gemini_no_api_key(self, ai_agent):
-        """Test Gemini call without API key."""
-        ai_agent.gemini_api_key = None
-        response, tokens = await ai_agent._call_gemini("Hello", [])
-
-        assert response is None
-        assert tokens == 0
-
-    @pytest.mark.asyncio
-    async def test_call_gemini_with_history(self, ai_agent):
-        """Test Gemini call with conversation history."""
-        ai_agent.gemini_api_key = "test_key"  # Set API key
-
-        with patch.object(ai_agent, '_get_http_client') as mock_client:
-            mock_response = MagicMock()
-            mock_response.json.return_value = {
-                "candidates": [{
-                    "content": {
-                        "parts": [{"text": "Response with context"}]
-                    }
-                }]
-            }
-            mock_response.raise_for_status = MagicMock()
-
-            mock_http = AsyncMock()
-            mock_http.post = AsyncMock(return_value=mock_response)
-            mock_http.__aenter__ = AsyncMock(return_value=mock_http)
-            mock_http.__aexit__ = AsyncMock()
-            mock_client.return_value = mock_http
-
-            history = [
-                {"role": "user", "content": "Previous message"},
-                {"role": "assistant", "content": "Previous response"}
-            ]
-            response, tokens = await ai_agent._call_gemini("New message", history)
-
-            assert response == "Response with context"
 
 
 class TestHuggingFaceAPI:
@@ -223,9 +101,11 @@ class TestHuggingFaceAPI:
         """Test successful Hugging Face API call."""
         with patch.object(ai_agent, '_get_http_client') as mock_client:
             mock_response = MagicMock()
-            mock_response.json.return_value = [
-                {"generated_text": "HuggingFace response"}
-            ]
+            mock_response.json.return_value = {
+                "choices": [{
+                    "message": {"content": "HuggingFace response"}
+                }]
+            }
             mock_response.raise_for_status = MagicMock()
 
             mock_http = AsyncMock()
@@ -254,18 +134,18 @@ class TestHuggingFaceAPI:
     async def test_call_huggingface_model_loading(self, ai_agent):
         """Test HuggingFace model loading (503 error with retry)."""
         with patch.object(ai_agent, '_get_http_client') as mock_client:
-            # First call: 503 (model loading)
             mock_response_503 = MagicMock()
             mock_response_503.status_code = 503
             mock_response_503.raise_for_status = MagicMock(
                 side_effect=httpx.HTTPStatusError("Model loading", request=MagicMock(), response=mock_response_503)
             )
 
-            # Second call: success
             mock_response_200 = MagicMock()
-            mock_response_200.json.return_value = [
-                {"generated_text": "Response after loading"}
-            ]
+            mock_response_200.json.return_value = {
+                "choices": [{
+                    "message": {"content": "Response after loading"}
+                }]
+            }
             mock_response_200.raise_for_status = MagicMock()
 
             mock_http = AsyncMock()
@@ -274,7 +154,7 @@ class TestHuggingFaceAPI:
             mock_http.__aexit__ = AsyncMock()
             mock_client.return_value = mock_http
 
-            with patch('asyncio.sleep', new_callable=AsyncMock):  # Mock sleep to speed up test
+            with patch('asyncio.sleep', new_callable=AsyncMock):
                 messages = [{"role": "user", "content": "Hello"}]
                 response, tokens = await ai_agent._call_huggingface(messages)
 
@@ -287,8 +167,6 @@ class TestGenerateResponse:
     @pytest.mark.asyncio
     async def test_generate_response_no_api_keys(self, ai_agent):
         """Test response generation when no API keys are configured."""
-        ai_agent.openrouter_api_key = None
-        ai_agent.gemini_api_key = None
         ai_agent.huggingface_api_key = None
 
         response, tokens, confidence = await ai_agent.generate_response(
@@ -303,7 +181,7 @@ class TestGenerateResponse:
     @pytest.mark.asyncio
     async def test_generate_response_with_conversation_history(self, ai_agent):
         """Test response generation with conversation history."""
-        with patch.object(ai_agent, '_call_openrouter', new_callable=AsyncMock) as mock_call:
+        with patch.object(ai_agent, '_call_huggingface', new_callable=AsyncMock) as mock_call:
             mock_call.return_value = ("Response with context", 50)
 
             history = [
@@ -319,12 +197,12 @@ class TestGenerateResponse:
 
             assert response == "Response with context"
             assert tokens == 50
-            assert confidence == 0.9
+            assert confidence == 0.85
 
     @pytest.mark.asyncio
     async def test_generate_response_cross_channel(self, ai_agent):
         """Test response generation with cross-channel acknowledgment."""
-        with patch.object(ai_agent, '_call_openrouter', new_callable=AsyncMock) as mock_call:
+        with patch.object(ai_agent, '_call_huggingface', new_callable=AsyncMock) as mock_call:
             mock_call.return_value = ("Cross-channel response", 40)
 
             response, tokens, confidence = await ai_agent.generate_response(
@@ -334,31 +212,8 @@ class TestGenerateResponse:
             )
 
             assert response == "Cross-channel response"
-            # Verify that cross-channel acknowledgment was added to messages
-            call_args = mock_call.call_args[0][0]  # Get messages argument
+            call_args = mock_call.call_args[0][0]
             assert any("previously contacted" in str(msg.get("content", "")).lower() for msg in call_args)
-
-    @pytest.mark.asyncio
-    async def test_generate_response_fallback_chain(self, ai_agent):
-        """Test fallback chain: OpenRouter → HuggingFace → Gemini."""
-        with patch.object(ai_agent, '_call_openrouter', new_callable=AsyncMock) as mock_or, \
-             patch.object(ai_agent, '_call_huggingface', new_callable=AsyncMock) as mock_hf, \
-             patch.object(ai_agent, '_call_gemini', new_callable=AsyncMock) as mock_gemini:
-
-            # OpenRouter fails
-            mock_or.return_value = (None, 0)
-            # HuggingFace succeeds
-            mock_hf.return_value = ("HF response", 30)
-
-            response, tokens, confidence = await ai_agent.generate_response(
-                message="Test message",
-                channel="web_form"
-            )
-
-            assert response == "HF response"
-            assert tokens == 30
-            assert confidence == 0.85
-            mock_gemini.assert_not_called()  # Should not reach Gemini
 
 
 class TestFallbackResponse:
@@ -418,7 +273,7 @@ class TestErrorHandling:
     @pytest.mark.asyncio
     async def test_generate_response_exception_handling(self, ai_agent):
         """Test that exceptions are caught and fallback is returned."""
-        with patch.object(ai_agent, '_call_openrouter', new_callable=AsyncMock) as mock_call:
+        with patch.object(ai_agent, '_call_huggingface', new_callable=AsyncMock) as mock_call:
             mock_call.side_effect = Exception("Unexpected error")
 
             response, tokens, confidence = await ai_agent.generate_response(
@@ -426,7 +281,6 @@ class TestErrorHandling:
                 channel="web_form"
             )
 
-            # Should return fallback response
             assert "temporarily unavailable" in response
             assert tokens == 0
             assert confidence is None
@@ -442,7 +296,7 @@ class TestErrorHandling:
             mock_client.return_value = mock_http
 
             messages = [{"role": "user", "content": "Hello"}]
-            response, tokens = await ai_agent._call_openrouter(messages)
+            response, tokens = await ai_agent._call_huggingface(messages)
 
             assert response is None
             assert tokens == 0
