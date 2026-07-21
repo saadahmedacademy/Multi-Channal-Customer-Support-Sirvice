@@ -40,7 +40,7 @@ class Settings(BaseSettings):
         description="Hugging Face API key"
     )
     huggingface_model: Optional[str] = Field(
-        default="NousResearch/Hermes-3-Llama-3.1-8B",
+        default="meta-llama/Llama-3.1-8B-Instruct",
         description="Hugging Face model to use"
     )
 

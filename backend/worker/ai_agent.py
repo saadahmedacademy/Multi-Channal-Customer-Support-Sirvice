@@ -142,7 +142,7 @@ CONTENT SAFETY RULES (CRITICAL):
                 if response:
                     return self._strip_markdown(response), tokens, 0.85
 
-            logger.error("HUGGINGFACE_API_KEY not configured")
+            logger.error("All Hugging Face models failed to generate a response")
             return self._get_fallback_response(channel), 0, None
 
         except Exception as e:
@@ -170,18 +170,19 @@ CONTENT SAFETY RULES (CRITICAL):
 
         models_to_try = [
             self.huggingface_model,
-            "NousResearch/Hermes-3-Llama-3.1-8B",
-            "Qwen/Qwen2.5-7B-Instruct",
+            "microsoft/Phi-3-mini-4k-instruct",
+            "google/gemma-2-2b-it",
         ]
 
         client = await self._get_http_client()
 
         for model in models_to_try:
             try:
-                url = f"https://api-inference.huggingface.co/models/{model}/v1/chat/completions"
+                url = "https://router.huggingface.co/v1/chat/completions"
                 response = await client.post(
                     url,
                     json={
+                        "model": model,
                         "messages": messages,
                         "max_tokens": self.max_tokens,
                         "temperature": 0.7,
