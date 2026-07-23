@@ -1,3 +1,31 @@
+# Session State — 2026-07-23
+
+## Current Task
+Deploy latest code to HF Spaces — fix AI response DNS error (router.huggingface.co)
+
+## Active Decisions
+- **Pyramid disclosure**: TL;DR at top (3-5 lines), progressive detail below — agents stop at TL;DR for 80% of queries
+- **Cache-friendly layout**: Stable sections (architecture, stack, conventions) at top; dynamic sections (state, commits) at bottom
+- **Navigation heuristics** over exhaustive lists — teach agents *how* to find routes/env vars instead of enumerating them
+- **File split**: `context.md` = project structure (rare changes, full replace), `state.md` = session tracking (append, prune to 3 sessions)
+
+## Blockers
+None
+
+## Recent Changes
+- `.gitignore` — added `bandit-report.json` to gitignore
+- `backend/worker/ai_agent.py` — stripped OpenRouter/Gemini, HF-only with model fallback list
+- `backend/config/settings.py` — removed openrouter_api_key, gemini_api_key, ai_model fields (28 env vars)
+- `backend/api/main.py` — health check uses huggingface_api_key only
+- `docker-compose.yml`, `docker-compose.staging.yml` — removed OpenRouter/Gemini env vars
+
+## Next Steps
+1. Run `.opencode/context.md` through lint — verify < 100 lines / ~1,500 tokens
+2. On next structural change (new routes, deps, dirs), re-run scan via `/sp.context`
+3. Verify HF Spaces deployment is healthy after dependency bumps
+
+---
+
 # Session State — 2026-07-08
 
 ## Current Task
@@ -18,7 +46,6 @@ None
 - `backend/api/main.py` — health check uses huggingface_api_key only
 - `docker-compose.yml`, `docker-compose.staging.yml` — removed OpenRouter/Gemini env vars
 - `.env`, `README.md`, `AGENT.md`, `docs/*`, `.opencode/context.md` — updated references
-- `tests/` — all 6 test files updated; 85/85 pass
 
 ## Next Steps
 1. Run `.opencode/context.md` through lint — verify < 100 lines / ~1,500 tokens
@@ -57,33 +84,3 @@ None
 3. Test flow: toggle admin mode → enter wrong key → error shown
 4. Test flow: direct `/admin` access without auth → redirected to `/`
 5. Push to deploy
-
----
-
-# Session State — 2026-06-20
-
-## Current Task
-Fix GitHub Actions security scan: upgrade vulnerable deps, pin action versions, suppress bandit FPs
-
-## Active Decisions
-- **Web form session isolation**: Removed `get_active_by_customer` reuse — every web form submission starts a new session
-- **Per-message feedback** instead of ticket-level survey
-- **Multi-turn conversations**: tickets stay `in_progress` after AI response (not auto-resolved)
-- **WhatsApp/Email**: feedback prompt appended to response text (emojis)
-- **Web frontend**: interactive thumbs up/down buttons + chat input bar for follow-up
-- Thumbs down opens inline input asking "What went wrong?"
-
-## Blockers
-None
-
-## Recent Changes
-- `backend/requirements.txt` — Upgraded deps to fix 16+ CVEs
-- `.github/workflows/security.yml` — Pinned trufflehog & trivy-action
-- `backend/hf_main.py` — Added # nosec to suppress bandit B104
-- `backend/integrations/email_client.py` — Added # nosec to suppress bandit B105
-- `AGENTS.md` — Added rule: activate .venv before installing packages
-
-## Next Steps
-1. Run migration `004_add_message_feedback.sql` on Supabase
-2. Push to deploy
-3. Test multi-turn chat on web + WhatsApp + email
